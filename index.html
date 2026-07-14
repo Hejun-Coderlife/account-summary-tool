@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>客户账目汇总工具</title>
 <script src="xlsx.full.min.js"></script>
+<script src="html2canvas.min.js"></script>
 <style>
   :root{
     --bg:#0f172a; --panel:#ffffff; --ink:#1e293b; --muted:#64748b;
@@ -87,6 +88,15 @@
   .custhead h3{margin:0;font-size:15px;}
   .hidden{display:none;}
   .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:20px;}
+  /* 底部文字总结 */
+  .summary-note{margin-top:16px;border:1px solid var(--line);border-left:4px solid var(--brand);
+    border-radius:10px;padding:14px 18px;background:#f8fbff;font-size:13px;line-height:1.9;}
+  .summary-note h4{margin:0 0 8px;font-size:14px;color:var(--brand-d);}
+  .summary-note b{color:var(--ink);}
+  .summary-note .g{color:var(--in);font-weight:600;} .summary-note .r{color:var(--out);font-weight:600;}
+  .summary-note ul{margin:6px 0 0;padding-left:20px;} .summary-note li{margin:2px 0;}
+  /* 截图时把横向滚动展开，避免裁切 */
+  .capturing .tablewrap{overflow:visible!important;width:max-content!important;max-width:none!important;}
 </style>
 </head>
 <body>
@@ -136,6 +146,7 @@
       <button class="btn primary" id="dlAll">📦 下载汇总工作簿（含各客户分表）</button>
       <button class="btn ghost" id="dlSummary">📄 仅下载汇总表</button>
       <button class="btn ghost" id="dlCurrent">⬇️ 下载当前客户分表</button>
+      <button class="btn ghost" id="dlImage">🖼️ 下载表格图片</button>
       <span class="spacer"></span>
       <input type="text" class="search" id="search" placeholder="🔍 搜索客户名…">
     </div>
@@ -404,9 +415,10 @@ function summaryTable(){
   });
   if(rows.length===0)return '<div class="empty">没有匹配的客户</div>';
   let tIn=0,tOut=0,tInC=0,tOutC=0;
-  const trs=rows.map(c=>{
+  const trs=rows.map((c,i)=>{
     tIn+=c.inSum;tOut+=c.outSum;tInC+=c.inCount;tOutC+=c.outCount;
     return `<tr>
+      <td class="num" style="color:var(--muted)">${i+1}</td>
       <td><a class="cust-link" onclick="switchTab('${escapeAttr(c.name)}')">${escapeHtml(c.name)}</a></td>
       <td class="num">${c.inCount||''}</td>
       <td class="num pos">${c.inSum?fmt(c.inSum):''}</td>
@@ -416,8 +428,9 @@ function summaryTable(){
     </tr>`;
   }).join('');
   const arrow=k=>sortKey===k?(sortDir<0?' ▼':' ▲'):'';
-  return `<div class="tablewrap"><table>
+  const table=`<div class="tablewrap"><table>
     <thead><tr>
+      <th class="num">序号</th>
       <th onclick="sortSummary('name')">客户名${arrow('name')}</th>
       <th class="num">进账笔数</th>
       <th class="num" onclick="sortSummary('inSum')">进账金额${arrow('inSum')}</th>
@@ -426,11 +439,34 @@ function summaryTable(){
       <th class="num" onclick="sortSummary('net')">净额${arrow('net')}</th>
     </tr></thead>
     <tbody>${trs}
-      <tr class="total-row"><td>合计（${rows.length} 户）</td>
+      <tr class="total-row"><td></td><td>合计（${rows.length} 户）</td>
         <td class="num">${tInC}</td><td class="num">${fmt(tIn)}</td>
         <td class="num">${tOutC}</td><td class="num">${fmt(tOut)}</td>
         <td class="num">${fmt(tIn-tOut)}</td></tr>
     </tbody></table></div>`;
+  return table+summaryNote(rows,tIn,tOut);
+}
+// 底部方便阅读的文字总结
+function summaryNote(rows,tIn,tOut){
+  const net=tIn-tOut;
+  const posCust=rows.filter(c=>c.net>0).length;
+  const negCust=rows.filter(c=>c.net<0).length;
+  const zeroCust=rows.filter(c=>c.net===0).length;
+  const topIn=[...rows].sort((a,b)=>b.inSum-a.inSum).slice(0,3).filter(c=>c.inSum>0);
+  const topNeg=[...rows].sort((a,b)=>a.net-b.net).slice(0,3).filter(c=>c.net<0);
+  const li=arr=>arr.map(c=>`<li>${escapeHtml(c.name)}</li>`).join('');
+  const liIn=topIn.map(c=>`<li>${escapeHtml(c.name)}：进账 <span class="g">¥${fmt(c.inSum)}</span></li>`).join('');
+  const liNeg=topNeg.map(c=>`<li>${escapeHtml(c.name)}：净额 <span class="r">¥${fmt(c.net)}</span>（出账多于进账）</li>`).join('');
+  return `<div class="summary-note">
+    <h4>📋 汇总说明</h4>
+    <div>本表共 <b>${rows.length}</b> 户客户。
+      进账合计 <span class="g">¥${fmt(tIn)}</span>，
+      出账合计 <span class="r">¥${fmt(tOut)}</span>，
+      净额（进−出）<b class="${net>=0?'g':'r'}">¥${fmt(net)}</b>。</div>
+    <div style="margin-top:4px;">其中：净额为正（进账多）<b>${posCust}</b> 户，净额为负（出账多）<b>${negCust}</b> 户，进出持平 <b>${zeroCust}</b> 户。</div>
+    ${topIn.length?`<div style="margin-top:8px;"><b>进账最多：</b><ul>${liIn}</ul></div>`:''}
+    ${topNeg.length?`<div style="margin-top:8px;"><b>净额为负最多（出账多于进账，请重点核对）：</b><ul>${liNeg}</ul></div>`:''}
+  </div>`;
 }
 window.sortSummary=k=>{ if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=-1;} renderPanel(); };
 
@@ -464,13 +500,13 @@ function sanitizeSheet(name,used){
   used.add(s);return s;
 }
 function summaryAOA(){
-  const aoa=[['客户名','进账笔数','进账金额(元)','出账笔数','出账金额(元)','净额(进-出)(元)']];
+  const aoa=[['序号','客户名','进账笔数','进账金额(元)','出账笔数','出账金额(元)','净额(进-出)(元)']];
   let tIn=0,tOut=0,tInC=0,tOutC=0;
-  result.customers.forEach(c=>{
-    aoa.push([c.name,c.inCount,round2(c.inSum),c.outCount,round2(c.outSum),round2(c.net)]);
+  result.customers.forEach((c,i)=>{
+    aoa.push([i+1,c.name,c.inCount,round2(c.inSum),c.outCount,round2(c.outSum),round2(c.net)]);
     tIn+=c.inSum;tOut+=c.outSum;tInC+=c.inCount;tOutC+=c.outCount;
   });
-  aoa.push(['合计',tInC,round2(tIn),tOutC,round2(tOut),round2(tIn-tOut)]);
+  aoa.push(['','合计',tInC,round2(tIn),tOutC,round2(tOut),round2(tIn-tOut)]);
   return aoa;
 }
 function custAOA(c){
@@ -508,6 +544,28 @@ function downloadCurrent(){
   XLSX.writeFile(wb,'客户_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx');
 }
 
+function downloadImage(){
+  const el=document.getElementById('panelBody');
+  if(!el||!result){alert('请先生成汇总');return;}
+  const btn=document.getElementById('dlImage');
+  const old=btn.textContent; btn.textContent='⏳ 生成图片中…'; btn.disabled=true;
+  el.classList.add('capturing');
+  html2canvas(el,{backgroundColor:'#ffffff',scale:2,useCORS:true,windowWidth:el.scrollWidth+40})
+    .then(canvas=>{
+      el.classList.remove('capturing');
+      const label=activeTab==='__summary__'?'客户账目汇总表':('客户_'+activeTab);
+      canvas.toBlob(blob=>{
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=label.replace(/[\/\\:*?"<>|]/g,'_')+'.png';
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+      });
+    })
+    .catch(err=>{el.classList.remove('capturing');alert('图片生成失败：'+err);})
+    .finally(()=>{btn.textContent=old;btn.disabled=false;});
+}
+
 /* ============ 转义 ============ */
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function escapeAttr(s){return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');}
@@ -527,6 +585,7 @@ document.getElementById('genBtn').addEventListener('click',generate);
 document.getElementById('dlAll').addEventListener('click',downloadAll);
 document.getElementById('dlSummary').addEventListener('click',downloadSummary);
 document.getElementById('dlCurrent').addEventListener('click',downloadCurrent);
+document.getElementById('dlImage').addEventListener('click',downloadImage);
 document.getElementById('search').addEventListener('input',()=>{renderTabs();if(activeTab==='__summary__')renderPanel();});
 updateGenState();
 </script>
