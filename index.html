@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客户账目汇总工具</title>
+<script src="xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#1e293b; --muted:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --brand-d:#1d4ed8;
+    --in:#059669; --in-bg:#ecfdf5; --out:#dc2626; --out-bg:#fef2f2;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 8px 24px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#f1f5f9;color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;}
+  header.top{background:linear-gradient(120deg,#0f172a,#1e3a8a);color:#fff;padding:22px 28px;}
+  header.top h1{margin:0;font-size:20px;font-weight:600;letter-spacing:.3px;}
+  header.top p{margin:6px 0 0;font-size:13px;opacity:.8;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+    padding:20px 22px;margin-bottom:20px;}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .card .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+  .step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;
+    font-size:12px;align-items:center;justify-content:center;font-weight:600;}
+  .drop-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:720px){.drop-row{grid-template-columns:1fr;}}
+  .drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;
+    transition:.15s;background:#fafcff;}
+  .drop:hover{border-color:var(--brand);background:#f0f6ff;}
+  .drop.income{--accent:var(--in);}
+  .drop.expense{--accent:var(--out);}
+  .drop .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;margin-bottom:8px;}
+  .drop.income .tag{background:var(--in-bg);color:var(--in);}
+  .drop.expense .tag{background:var(--out-bg);color:var(--out);}
+  .drop .big{font-size:14px;font-weight:600;}
+  .drop .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  .filelist{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .fitem{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fbfcfe;}
+  .fitem .fhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .fitem .fname{font-weight:600;font-size:13.5px;flex:1;min-width:180px;word-break:break-all;}
+  .badge{font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600;}
+  .badge.in{background:var(--in-bg);color:var(--in);}
+  .badge.out{background:var(--out-bg);color:var(--out);}
+  .badge.rows{background:#eef2ff;color:#4338ca;}
+  .cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;}
+  .cfg label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;font-weight:600;}
+  select,.btn{font-family:inherit;}
+  select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink);}
+  .rm{background:none;border:none;color:var(--out);cursor:pointer;font-size:12px;font-weight:600;padding:4px;}
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
+  .btn.primary{background:var(--brand);color:#fff;}
+  .btn.primary:hover{background:var(--brand-d);}
+  .btn.primary:disabled{background:#cbd5e1;cursor:not-allowed;}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .btn.ghost:hover{border-color:var(--brand);color:var(--brand);}
+  .btn.sm{padding:5px 12px;font-size:12.5px;border-radius:7px;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .toolbar .spacer{flex:1;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .stat{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:#fbfcfe;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:20px;font-weight:700;margin-top:2px;}
+  .stat.in .v{color:var(--in);} .stat.out .v{color:var(--out);}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:0;overflow-x:auto;}
+  .tab{padding:9px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--muted);
+    border-bottom:2px solid transparent;white-space:nowrap;font-weight:600;}
+  .tab.active{color:var(--brand);border-bottom-color:var(--brand);}
+  .search{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:220px;max-width:100%;}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:14px;}
+  table{border-collapse:collapse;width:100%;font-size:13px;}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{background:#f8fafc;font-weight:600;color:#475569;position:sticky;top:0;cursor:pointer;user-select:none;}
+  tbody tr:hover{background:#f8fbff;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .pos{color:var(--in);font-weight:600;} .neg{color:var(--out);font-weight:600;}
+  tr.total-row td{font-weight:700;background:#f1f5f9;border-top:2px solid var(--brand);}
+  .cust-link{color:var(--brand);cursor:pointer;text-decoration:none;font-weight:600;}
+  .cust-link:hover{text-decoration:underline;}
+  .empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px;}
+  .pill{font-size:11px;padding:1px 7px;border-radius:999px;font-weight:600;}
+  .pill.in{background:var(--in-bg);color:var(--in);} .pill.out{background:var(--out-bg);color:var(--out);}
+  #panelBody{padding-top:2px;}
+  .custhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;}
+  .custhead h3{margin:0;font-size:15px;}
+  .hidden{display:none;}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:20px;}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>💼 客户账目汇总工具</h1>
+  <p>上传进账 / 出账表格 → 按客户名自动汇总 → 预览 → 分别或整体下载</p>
+</header>
+
+<div class="wrap">
+
+  <!-- STEP 1: upload -->
+  <div class="card">
+    <h2><span class="step">1</span> 上传表格</h2>
+    <p class="hint">可分别上传多个文件。程序会自动识别「客户名」列和「金额」列，识别不准可在下方手动调整。支持 .xlsx / .xls / .csv</p>
+    <div class="drop-row">
+      <div class="drop income" id="dropIncome">
+        <span class="tag">进账 · 收入</span>
+        <div class="big">📥 点击或拖入 进账表格</div>
+        <div class="sub">如：银行账单汇总</div>
+        <input type="file" id="fileIncome" multiple accept=".xlsx,.xls,.csv" class="hidden">
+      </div>
+      <div class="drop expense" id="dropExpense">
+        <span class="tag">出账 · 支出</span>
+        <div class="big">📤 点击或拖入 出账表格</div>
+        <div class="sub">如：手写开票记录</div>
+        <input type="file" id="fileExpense" multiple accept=".xlsx,.xls,.csv" class="hidden">
+      </div>
+    </div>
+    <div class="filelist" id="fileList"></div>
+  </div>
+
+  <!-- STEP 2: generate -->
+  <div class="card">
+    <h2><span class="step">2</span> 生成汇总</h2>
+    <p class="hint">确认列识别无误后，点击生成。相同客户名（自动去除空格）会合并到一起。</p>
+    <div class="toolbar">
+      <button class="btn primary" id="genBtn" disabled>⚡ 生成汇总表</button>
+      <span class="hint" id="genHint" style="margin:0;"></span>
+    </div>
+  </div>
+
+  <!-- STEP 3: preview + download -->
+  <div class="card hidden" id="resultCard">
+    <h2><span class="step">3</span> 预览与下载</h2>
+    <div class="stats" id="stats"></div>
+    <div class="toolbar" style="margin-bottom:14px;">
+      <button class="btn primary" id="dlAll">📦 下载汇总工作簿（含各客户分表）</button>
+      <button class="btn ghost" id="dlSummary">📄 仅下载汇总表</button>
+      <button class="btn ghost" id="dlCurrent">⬇️ 下载当前客户分表</button>
+      <span class="spacer"></span>
+      <input type="text" class="search" id="search" placeholder="🔍 搜索客户名…">
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="panelBody"></div>
+  </div>
+
+  <div class="foot">数据全部在本机浏览器中处理，不会上传到任何服务器。</div>
+</div>
+
+<script>
+/* ============ 全局状态 ============ */
+const store = { income: [], expense: [] };   // 每类别的文件配置数组
+let result = null;                            // 生成后的汇总结果
+let activeTab = '__summary__';
+
+const NAME_KEYS = ['户名','单位','名称','客户','对方','付款','收款','公司','厂','客商','往来'];
+const AMT_KEYS  = ['金额','交易金额','发生额','收入','支出','价税','合计','金额(元)','元','款'];
+const DATE_KEYS = ['日期','日','时间','开票日'];
+const REMARK_KEYS=['备注','摘要','说明','附言','用途','品名'];
+
+/* ============ 工具函数 ============ */
+function cleanNum(v){
+  if(v==null||v==='')return 0;
+  if(typeof v==='number')return v;
+  const s=String(v).replace(/[,¥$￥\s元]/g,'').replace(/[（(].*?[)）]/g,'');
+  const n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+function cleanName(v){
+  if(v==null)return '';
+  return String(v).replace(/\s+/g,'').trim();
+}
+function fmt(n){
+  return (Math.round((n+Number.EPSILON)*100)/100).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function findCol(headers,keys){
+  for(let i=0;i<headers.length;i++){
+    const h=String(headers[i]==null?'':headers[i]);
+    for(const k of keys){ if(h.includes(k)) return i; }
+  }
+  return -1;
+}
+// 在一个 sheet(二维数组) 中定位表头行 + 识别列
+function analyzeSheet(aoa){
+  let headerRow=-1;
+  for(let r=0;r<Math.min(aoa.length,10);r++){
+    const row=aoa[r]||[];
+    const nonEmpty=row.filter(c=>c!=null&&String(c).trim()!=='').length;
+    const hasName=findCol(row,NAME_KEYS)>=0;
+    const hasAmt=findCol(row,AMT_KEYS)>=0;
+    if(nonEmpty>=2 && hasName && hasAmt){headerRow=r;break;}
+  }
+  if(headerRow<0){ // 退而求其次：第一行非空>=2 的行
+    for(let r=0;r<Math.min(aoa.length,10);r++){
+      const row=aoa[r]||[];
+      if(row.filter(c=>c!=null&&String(c).trim()!=='').length>=2){headerRow=r;break;}
+    }
+  }
+  if(headerRow<0)return null;
+  const headers=(aoa[headerRow]||[]).map(h=>h==null?'':String(h));
+  return{
+    headerRow, headers,
+    nameCol:findCol(headers,NAME_KEYS),
+    amountCol:findCol(headers,AMT_KEYS),
+    dateCol:findCol(headers,DATE_KEYS),
+    remarkCol:findCol(headers,REMARK_KEYS),
+    dataRows:aoa.length-headerRow-1
+  };
+}
+// 给一个 workbook 选出最像明细的 sheet
+function pickBestSheet(wb){
+  let best=null,bestScore=-1;
+  for(const name of wb.SheetNames){
+    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
+    const a=analyzeSheet(aoa);
+    if(!a)continue;
+    let score=0;
+    if(a.nameCol>=0)score+=100;
+    if(a.amountCol>=0)score+=100;
+    score+=Math.min(a.dataRows,500)/10;
+    if(score>bestScore){bestScore=score;best={name,aoa,analysis:a};}
+  }
+  return best;
+}
+
+/* ============ 文件读取 ============ */
+function handleFiles(fileList,category){
+  Array.from(fileList).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      let wb;
+      try{ wb=XLSX.read(e.target.result,{type:'array',cellDates:true}); }
+      catch(err){ alert('无法读取文件：'+file.name+'\n'+err); return; }
+      const picked=pickBestSheet(wb);
+      const entry={
+        id:'f'+Math.random().toString(36).slice(2,9),
+        name:file.name, category, wb,
+        sheetNames:wb.SheetNames,
+        selectedSheet:picked?picked.name:wb.SheetNames[0],
+        analysis:picked?picked.analysis:null
+      };
+      // 若挑选到的 sheet 没有分析结果，用当前 sheet 兜底
+      if(!entry.analysis){
+        const aoa=XLSX.utils.sheet_to_json(wb.Sheets[entry.selectedSheet],{header:1,defval:''});
+        entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};
+      }
+      store[category].push(entry);
+      renderFileList();
+      updateGenState();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// 用户切换 sheet 时重新分析
+function reanalyze(entry){
+  const aoa=XLSX.utils.sheet_to_json(entry.wb.Sheets[entry.selectedSheet],{header:1,defval:''});
+  entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};
+}
+
+/* ============ 渲染文件配置列表 ============ */
+function colOptions(headers,selected){
+  let s=`<option value="-1"${selected==-1?' selected':''}>（无 / 不使用）</option>`;
+  headers.forEach((h,i)=>{ s+=`<option value="${i}"${selected==i?' selected':''}>${escapeHtml(h||('第'+(i+1)+'列'))}</option>`; });
+  return s;
+}
+function renderFileList(){
+  const box=document.getElementById('fileList');
+  const all=[...store.income,...store.expense];
+  if(all.length===0){box.innerHTML='';return;}
+  box.innerHTML=all.map(en=>{
+    const a=en.analysis;
+    const badge=en.category==='income'?'<span class="badge in">进账</span>':'<span class="badge out">出账</span>';
+    const rowsN=a.dataRows||0;
+    const warn=(a.nameCol<0||a.amountCol<0)?'<span class="badge" style="background:#fef3c7;color:#b45309;">⚠ 请检查列</span>':'';
+    return `<div class="fitem" data-id="${en.id}">
+      <div class="fhead">
+        ${badge}
+        <span class="fname">${escapeHtml(en.name)}</span>
+        <span class="badge rows">${rowsN} 行数据</span>
+        ${warn}
+        <button class="rm" onclick="removeFile('${en.id}')">移除</button>
+      </div>
+      <div class="cfg">
+        <div><label>工作表</label>
+          <select onchange="onSheetChange('${en.id}',this.value)">
+            ${en.sheetNames.map(n=>`<option ${n===en.selectedSheet?'selected':''}>${escapeHtml(n)}</option>`).join('')}
+          </select></div>
+        <div><label>客户名 列</label>
+          <select onchange="setCol('${en.id}','nameCol',this.value)">${colOptions(a.headers,a.nameCol)}</select></div>
+        <div><label>金额 列</label>
+          <select onchange="setCol('${en.id}','amountCol',this.value)">${colOptions(a.headers,a.amountCol)}</select></div>
+        <div><label>日期 列（可选）</label>
+          <select onchange="setCol('${en.id}','dateCol',this.value)">${colOptions(a.headers,a.dateCol)}</select></div>
+        <div><label>备注 列（可选）</label>
+          <select onchange="setCol('${en.id}','remarkCol',this.value)">${colOptions(a.headers,a.remarkCol)}</select></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function findEntry(id){return [...store.income,...store.expense].find(e=>e.id===id);}
+window.removeFile=id=>{
+  store.income=store.income.filter(e=>e.id!==id);
+  store.expense=store.expense.filter(e=>e.id!==id);
+  renderFileList();updateGenState();
+};
+window.onSheetChange=(id,sheet)=>{const en=findEntry(id);en.selectedSheet=sheet;reanalyze(en);renderFileList();updateGenState();};
+window.setCol=(id,key,val)=>{const en=findEntry(id);en.analysis[key]=parseInt(val,10);updateGenState();};
+
+function updateGenState(){
+  const all=[...store.income,...store.expense];
+  const ok=all.length>0 && all.every(e=>e.analysis.nameCol>=0&&e.analysis.amountCol>=0);
+  const btn=document.getElementById('genBtn');
+  btn.disabled=!ok;
+  const hint=document.getElementById('genHint');
+  if(all.length===0)hint.textContent='请先上传至少一个表格。';
+  else if(!ok)hint.textContent='部分文件的「客户名」或「金额」列未识别，请在上方选择。';
+  else hint.textContent=`共 ${store.income.length} 个进账文件、${store.expense.length} 个出账文件，准备就绪。`;
+}
+
+/* ============ 生成汇总 ============ */
+function extractRows(entry){
+  const aoa=XLSX.utils.sheet_to_json(entry.wb.Sheets[entry.selectedSheet],{header:1,defval:''});
+  const a=entry.analysis;
+  const out=[];
+  for(let r=a.headerRow+1;r<aoa.length;r++){
+    const row=aoa[r]||[];
+    const name=cleanName(row[a.nameCol]);
+    const amtRaw=a.amountCol>=0?row[a.amountCol]:'';
+    const amount=cleanNum(amtRaw);
+    if(!name && amount===0)continue;           // 跳过空行
+    if(!name)continue;                          // 无客户名跳过
+    let dateVal='';
+    if(a.dateCol>=0){
+      const d=row[a.dateCol];
+      if(d instanceof Date)dateVal=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      else dateVal=String(d==null?'':d);
+    }
+    const remark=a.remarkCol>=0?String(row[a.remarkCol]==null?'':row[a.remarkCol]):'';
+    out.push({name,amount,date:dateVal,remark,source:entry.name,category:entry.category});
+  }
+  return out;
+}
+function generate(){
+  const incomeRows=store.income.flatMap(extractRows);
+  const expenseRows=store.expense.flatMap(extractRows);
+  const all=[...incomeRows,...expenseRows];
+  const map=new Map();
+  for(const row of all){
+    if(!map.has(row.name))map.set(row.name,{name:row.name,inCount:0,inSum:0,outCount:0,outSum:0,rows:[]});
+    const c=map.get(row.name);
+    if(row.category==='income'){c.inCount++;c.inSum+=row.amount;}
+    else{c.outCount++;c.outSum+=row.amount;}
+    c.rows.push(row);
+  }
+  const customers=[...map.values()].map(c=>({...c,net:c.inSum-c.outSum}));
+  customers.sort((a,b)=>(b.inSum+b.outSum)-(a.inSum+a.outSum));
+  result={customers,
+    totalIn:incomeRows.reduce((s,r)=>s+r.amount,0),
+    totalOut:expenseRows.reduce((s,r)=>s+r.amount,0),
+    inCount:incomeRows.length, outCount:expenseRows.length};
+  activeTab='__summary__';
+  renderResult();
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+
+/* ============ 渲染结果 ============ */
+function renderResult(){
+  const card=document.getElementById('resultCard');
+  card.classList.remove('hidden');
+  const r=result;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat in"><div class="k">进账合计（收入）</div><div class="v">¥${fmt(r.totalIn)}</div><div class="k">${r.inCount} 笔</div></div>
+    <div class="stat out"><div class="k">出账合计（支出）</div><div class="v">¥${fmt(r.totalOut)}</div><div class="k">${r.outCount} 笔</div></div>
+    <div class="stat"><div class="k">净额（进−出）</div><div class="v" style="color:${r.totalIn-r.totalOut>=0?'var(--in)':'var(--out)'}">¥${fmt(r.totalIn-r.totalOut)}</div></div>
+    <div class="stat"><div class="k">客户数</div><div class="v">${r.customers.length}</div></div>`;
+  renderTabs();
+  renderPanel();
+}
+function renderTabs(){
+  const q=(document.getElementById('search')?.value||'').trim();
+  const list=result.customers.filter(c=>!q||c.name.includes(q));
+  let html=`<button class="tab ${activeTab==='__summary__'?'active':''}" onclick="switchTab('__summary__')">📊 汇总表</button>`;
+  html+=list.map(c=>`<button class="tab ${activeTab===c.name?'active':''}" onclick="switchTab('${escapeAttr(c.name)}')">${escapeHtml(c.name)}</button>`).join('');
+  document.getElementById('tabs').innerHTML=html;
+}
+window.switchTab=name=>{activeTab=name;renderTabs();renderPanel();};
+
+let sortKey='both',sortDir=-1;
+function renderPanel(){
+  const body=document.getElementById('panelBody');
+  if(activeTab==='__summary__'){body.innerHTML=summaryTable();return;}
+  const c=result.customers.find(x=>x.name===activeTab);
+  if(!c){body.innerHTML='<div class="empty">未找到该客户</div>';return;}
+  body.innerHTML=custDetail(c);
+}
+function summaryTable(){
+  const q=(document.getElementById('search')?.value||'').trim();
+  let rows=result.customers.filter(c=>!q||c.name.includes(q));
+  const keymap={name:c=>c.name,inSum:c=>c.inSum,outSum:c=>c.outSum,net:c=>c.net,both:c=>c.inSum+c.outSum};
+  rows=[...rows].sort((a,b)=>{
+    const va=keymap[sortKey](a),vb=keymap[sortKey](b);
+    if(typeof va==='string')return sortDir*va.localeCompare(vb,'zh');
+    return sortDir*(va-vb);
+  });
+  if(rows.length===0)return '<div class="empty">没有匹配的客户</div>';
+  let tIn=0,tOut=0,tInC=0,tOutC=0;
+  const trs=rows.map(c=>{
+    tIn+=c.inSum;tOut+=c.outSum;tInC+=c.inCount;tOutC+=c.outCount;
+    return `<tr>
+      <td><a class="cust-link" onclick="switchTab('${escapeAttr(c.name)}')">${escapeHtml(c.name)}</a></td>
+      <td class="num">${c.inCount||''}</td>
+      <td class="num pos">${c.inSum?fmt(c.inSum):''}</td>
+      <td class="num">${c.outCount||''}</td>
+      <td class="num neg">${c.outSum?fmt(c.outSum):''}</td>
+      <td class="num ${c.net>=0?'pos':'neg'}">${fmt(c.net)}</td>
+    </tr>`;
+  }).join('');
+  const arrow=k=>sortKey===k?(sortDir<0?' ▼':' ▲'):'';
+  return `<div class="tablewrap"><table>
+    <thead><tr>
+      <th onclick="sortSummary('name')">客户名${arrow('name')}</th>
+      <th class="num">进账笔数</th>
+      <th class="num" onclick="sortSummary('inSum')">进账金额${arrow('inSum')}</th>
+      <th class="num">出账笔数</th>
+      <th class="num" onclick="sortSummary('outSum')">出账金额${arrow('outSum')}</th>
+      <th class="num" onclick="sortSummary('net')">净额${arrow('net')}</th>
+    </tr></thead>
+    <tbody>${trs}
+      <tr class="total-row"><td>合计（${rows.length} 户）</td>
+        <td class="num">${tInC}</td><td class="num">${fmt(tIn)}</td>
+        <td class="num">${tOutC}</td><td class="num">${fmt(tOut)}</td>
+        <td class="num">${fmt(tIn-tOut)}</td></tr>
+    </tbody></table></div>`;
+}
+window.sortSummary=k=>{ if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=-1;} renderPanel(); };
+
+function custDetail(c){
+  const detRows=c.rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const trs=detRows.map(r=>`<tr>
+    <td>${escapeHtml(r.date||'')}</td>
+    <td>${r.category==='income'?'<span class="pill in">进账</span>':'<span class="pill out">出账</span>'}</td>
+    <td class="num ${r.category==='income'?'pos':'neg'}">${fmt(r.amount)}</td>
+    <td>${escapeHtml(r.remark||'')}</td>
+    <td style="color:var(--muted)">${escapeHtml(r.source)}</td>
+  </tr>`).join('');
+  return `<div class="custhead">
+      <h3>${escapeHtml(c.name)}</h3>
+      <div style="display:flex;gap:14px;font-size:13px;flex-wrap:wrap;">
+        <span>进账 <b class="pos">¥${fmt(c.inSum)}</b>（${c.inCount}笔）</span>
+        <span>出账 <b class="neg">¥${fmt(c.outSum)}</b>（${c.outCount}笔）</span>
+        <span>净额 <b class="${c.net>=0?'pos':'neg'}">¥${fmt(c.net)}</b></span>
+      </div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>日期</th><th>类型</th><th class="num">金额</th><th>备注</th><th>来源文件</th></tr></thead>
+      <tbody>${trs}</tbody></table></div>`;
+}
+
+/* ============ 下载 ============ */
+function sanitizeSheet(name,used){
+  let s=String(name).replace(/[\[\]\*\?\/\\\:]/g,'_').slice(0,28)||'客户';
+  let base=s,i=1;
+  while(used.has(s)){s=base.slice(0,25)+'_'+(i++);}
+  used.add(s);return s;
+}
+function summaryAOA(){
+  const aoa=[['客户名','进账笔数','进账金额(元)','出账笔数','出账金额(元)','净额(进-出)(元)']];
+  let tIn=0,tOut=0,tInC=0,tOutC=0;
+  result.customers.forEach(c=>{
+    aoa.push([c.name,c.inCount,round2(c.inSum),c.outCount,round2(c.outSum),round2(c.net)]);
+    tIn+=c.inSum;tOut+=c.outSum;tInC+=c.inCount;tOutC+=c.outCount;
+  });
+  aoa.push(['合计',tInC,round2(tIn),tOutC,round2(tOut),round2(tIn-tOut)]);
+  return aoa;
+}
+function custAOA(c){
+  const aoa=[['日期','类型','金额(元)','备注','来源文件']];
+  c.rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(r=>{
+    aoa.push([r.date||'',r.category==='income'?'进账':'出账',round2(r.amount),r.remark||'',r.source]);
+  });
+  aoa.push(['小计','进账',round2(c.inSum),'','']);
+  aoa.push(['小计','出账',round2(c.outSum),'','']);
+  aoa.push(['净额','',round2(c.net),'','']);
+  return aoa;
+}
+function round2(n){return Math.round((n+Number.EPSILON)*100)/100;}
+
+function downloadAll(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summaryAOA()),'汇总表');
+  const used=new Set(['汇总表']);
+  result.customers.forEach(c=>{
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(custAOA(c)),sanitizeSheet(c.name,used));
+  });
+  XLSX.writeFile(wb,'客户账目汇总.xlsx');
+}
+function downloadSummary(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summaryAOA()),'汇总表');
+  XLSX.writeFile(wb,'客户汇总表.xlsx');
+}
+function downloadCurrent(){
+  if(activeTab==='__summary__'){downloadSummary();return;}
+  const c=result.customers.find(x=>x.name===activeTab);
+  if(!c)return;
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(custAOA(c)),sanitizeSheet(c.name,new Set()));
+  XLSX.writeFile(wb,'客户_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx');
+}
+
+/* ============ 转义 ============ */
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function escapeAttr(s){return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+
+/* ============ 事件绑定 ============ */
+function bindDrop(dropId,inputId,category){
+  const drop=document.getElementById(dropId),input=document.getElementById(inputId);
+  drop.addEventListener('click',()=>input.click());
+  input.addEventListener('change',e=>{handleFiles(e.target.files,category);input.value='';});
+  ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='var(--brand)';}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='';}));
+  drop.addEventListener('drop',e=>{if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files,category);});
+}
+bindDrop('dropIncome','fileIncome','income');
+bindDrop('dropExpense','fileExpense','expense');
+document.getElementById('genBtn').addEventListener('click',generate);
+document.getElementById('dlAll').addEventListener('click',downloadAll);
+document.getElementById('dlSummary').addEventListener('click',downloadSummary);
+document.getElementById('dlCurrent').addEventListener('click',downloadCurrent);
+document.getElementById('search').addEventListener('input',()=>{renderTabs();if(activeTab==='__summary__')renderPanel();});
+updateGenState();
+</script>
+</body>
+</html>
