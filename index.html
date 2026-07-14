@@ -77,12 +77,17 @@
   .badge.out{background:var(--out-bg);color:var(--out);}
   .badge.rows{background:#eef2ff;color:#4338ca;}
   .rm{background:none;border:none;color:var(--out);cursor:pointer;font-size:12px;font-weight:600;padding:4px;}
-  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;}
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:7px;}
+  .bico{width:16px;height:16px;flex:none;}
   .btn.primary{background:linear-gradient(135deg,#475569 0%,#0ea5e9 100%);color:#fff;box-shadow:0 6px 18px rgba(51,65,85,.30);}
   .btn.primary:hover{filter:brightness(1.06);box-shadow:0 9px 24px rgba(79,70,229,.4);}
   .btn.primary:disabled{background:linear-gradient(135deg,#8f96ad,#9aa2b8);color:#f2f4fa;box-shadow:none;filter:none;cursor:not-allowed;}
   .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
   .btn.ghost:hover{border-color:var(--brand);color:var(--brand);}
+  .btn.data{background:#edf5fd;border:1px solid #cfe4f5;color:#0369a1;}
+  .btn.data:hover{border-color:#0284c7;background:#e0eefb;}
+  .btn.img{background:#e9f7f3;border:1px solid #cbe8e1;color:#0f766e;}
+  .btn.img:hover{border-color:#0d9488;background:#dbf1ea;}
   .btn.sm{padding:5px 12px;font-size:12.5px;border-radius:7px;}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .toolbar .spacer{flex:1;}
@@ -197,11 +202,11 @@
     <div id="warnBox"></div>
     <div class="stats" id="stats"></div>
     <div class="toolbar" style="margin-bottom:14px;">
-      <button class="btn primary" id="dlAll">下载汇总工作簿（含各客户分表）</button>
-      <button class="btn ghost" id="dlSummary">仅下载汇总表</button>
-      <button class="btn ghost" id="dlCurrent">下载当前客户分表</button>
-      <button class="btn ghost" id="dlImage">下载当前表格图片</button>
-      <button class="btn ghost" id="dlAllImages">批量下载全部图片(ZIP)</button>
+      <button class="btn primary" id="dlAll"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg>下载汇总工作簿（含各客户分表）</button>
+      <button class="btn data" id="dlSummary"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.7h17M9.2 4.5v15"/></svg>仅下载汇总表</button>
+      <button class="btn data" id="dlCurrent"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7l5 5v13H6z"/><path d="M13 3v5h5"/><path d="M9 13h6M9 16.5h4"/></svg>下载当前客户分表</button>
+      <button class="btn img" id="dlImage"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg>下载当前表格图片</button>
+      <button class="btn img" id="dlAllImages"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v10.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M3 4.5h18V8H3z"/><path d="M10 12h4"/></svg>批量下载全部图片(ZIP)</button>
       <span class="spacer"></span>
       <input type="text" class="search" id="search" placeholder="搜索客户名…">
     </div>
