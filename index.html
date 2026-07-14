@@ -165,7 +165,9 @@ let activeTab = '__summary__';
 
 const NAME_KEYS = ['户名','单位','名称','客户','对方','付款','收款','公司','厂','客商','往来'];
 const AMT_KEYS  = ['金额','交易金额','发生额','收入','支出','价税','合计','金额(元)','元','款'];
-const DATE_KEYS = ['日期','日','时间','开票日'];
+const YEAR_KEYS = ['年份','年度','年'];
+const MONTH_KEYS= ['月份','月'];
+const DAY_KEYS  = ['日期','开票日','时间','日','号'];
 const REMARK_KEYS=['备注','摘要','说明','附言','用途','品名'];
 
 /* ============ 工具函数 ============ */
@@ -212,7 +214,9 @@ function analyzeSheet(aoa){
     headerRow, headers,
     nameCol:findCol(headers,NAME_KEYS),
     amountCol:findCol(headers,AMT_KEYS),
-    dateCol:findCol(headers,DATE_KEYS),
+    yearCol:findCol(headers,YEAR_KEYS),
+    monthCol:findCol(headers,MONTH_KEYS),
+    dateCol:findCol(headers,DAY_KEYS),
     remarkCol:findCol(headers,REMARK_KEYS),
     dataRows:aoa.length-headerRow-1
   };
@@ -252,7 +256,7 @@ function handleFiles(fileList,category){
       // 若挑选到的 sheet 没有分析结果，用当前 sheet 兜底
       if(!entry.analysis){
         const aoa=XLSX.utils.sheet_to_json(wb.Sheets[entry.selectedSheet],{header:1,defval:''});
-        entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};
+        entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,yearCol:-1,monthCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};
       }
       store[category].push(entry);
       renderFileList();
@@ -265,7 +269,7 @@ function handleFiles(fileList,category){
 // 用户切换 sheet 时重新分析
 function reanalyze(entry){
   const aoa=XLSX.utils.sheet_to_json(entry.wb.Sheets[entry.selectedSheet],{header:1,defval:''});
-  entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};
+  entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,yearCol:-1,monthCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};
 }
 
 /* ============ 渲染文件配置列表 ============ */
@@ -300,7 +304,11 @@ function renderFileList(){
           <select onchange="setCol('${en.id}','nameCol',this.value)">${colOptions(a.headers,a.nameCol)}</select></div>
         <div><label>金额 列</label>
           <select onchange="setCol('${en.id}','amountCol',this.value)">${colOptions(a.headers,a.amountCol)}</select></div>
-        <div><label>日期 列（可选）</label>
+        <div><label>年 列（可选）</label>
+          <select onchange="setCol('${en.id}','yearCol',this.value)">${colOptions(a.headers,a.yearCol)}</select></div>
+        <div><label>月 列（可选）</label>
+          <select onchange="setCol('${en.id}','monthCol',this.value)">${colOptions(a.headers,a.monthCol)}</select></div>
+        <div><label>日 列（可选）</label>
           <select onchange="setCol('${en.id}','dateCol',this.value)">${colOptions(a.headers,a.dateCol)}</select></div>
         <div><label>备注 列（可选）</label>
           <select onchange="setCol('${en.id}','remarkCol',this.value)">${colOptions(a.headers,a.remarkCol)}</select></div>
@@ -329,6 +337,25 @@ function updateGenState(){
 }
 
 /* ============ 生成汇总 ============ */
+// 从一行里拼出完整日期 年-月-日
+function buildDate(row,a){
+  const pad=v=>String(v).padStart(2,'0');
+  // 若"日"那列本身就是完整日期对象
+  if(a.dateCol>=0 && row[a.dateCol] instanceof Date){
+    const d=row[a.dateCol];
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  const yv=a.yearCol>=0?row[a.yearCol]:'';
+  const mv=a.monthCol>=0?row[a.monthCol]:'';
+  const dv=a.dateCol>=0?row[a.dateCol]:'';
+  const num=x=>{const n=parseInt(String(x).replace(/[^0-9]/g,''),10);return isNaN(n)?null:n;};
+  const y=num(yv),m=num(mv),d=num(dv);
+  if(y&&m&&d)return `${y}年${m}月${d}日`;
+  if(m&&d)return `${m}月${d}日`;
+  if(d)return `${d}`;
+  // 兜底：直接拼字符串
+  return [yv,mv,dv].filter(x=>x!=null&&String(x).trim()!=='').join('-');
+}
 function extractRows(entry){
   const aoa=XLSX.utils.sheet_to_json(entry.wb.Sheets[entry.selectedSheet],{header:1,defval:''});
   const a=entry.analysis;
@@ -340,12 +367,7 @@ function extractRows(entry){
     const amount=cleanNum(amtRaw);
     if(!name && amount===0)continue;           // 跳过空行
     if(!name)continue;                          // 无客户名跳过
-    let dateVal='';
-    if(a.dateCol>=0){
-      const d=row[a.dateCol];
-      if(d instanceof Date)dateVal=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      else dateVal=String(d==null?'':d);
-    }
+    const dateVal=buildDate(row,a);
     const remark=a.remarkCol>=0?String(row[a.remarkCol]==null?'':row[a.remarkCol]):'';
     out.push({name,amount,date:dateVal,remark,source:entry.name,category:entry.category});
   }
@@ -471,13 +493,13 @@ function summaryNote(rows,tIn,tOut){
 window.sortSummary=k=>{ if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=-1;} renderPanel(); };
 
 function custDetail(c){
-  const detRows=c.rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  const trs=detRows.map(r=>`<tr>
+  const detRows=sortByDate(c.rows);
+  const trs=detRows.map((r,i)=>`<tr>
+    <td class="num" style="color:var(--muted)">${i+1}</td>
     <td>${escapeHtml(r.date||'')}</td>
     <td>${r.category==='income'?'<span class="pill in">进账</span>':'<span class="pill out">出账</span>'}</td>
     <td class="num ${r.category==='income'?'pos':'neg'}">${fmt(r.amount)}</td>
     <td>${escapeHtml(r.remark||'')}</td>
-    <td style="color:var(--muted)">${escapeHtml(r.source)}</td>
   </tr>`).join('');
   return `<div class="custhead">
       <h3>${escapeHtml(c.name)}</h3>
@@ -488,8 +510,39 @@ function custDetail(c){
       </div>
     </div>
     <div class="tablewrap"><table>
-      <thead><tr><th>日期</th><th>类型</th><th class="num">金额</th><th>备注</th><th>来源文件</th></tr></thead>
-      <tbody>${trs}</tbody></table></div>`;
+      <thead><tr><th class="num">序号</th><th>日期</th><th>类型</th><th class="num">金额</th><th>备注</th></tr></thead>
+      <tbody>${trs}
+        <tr class="total-row"><td></td><td>合计</td><td>${detRows.length} 笔</td>
+          <td class="num">${fmt(c.inSum+c.outSum)}</td><td></td></tr>
+      </tbody></table></div>
+    ${custNote(c,detRows)}`;
+}
+// 单客户明细排序：优先按 年月日 排（取行内可解析的数字），其次原顺序
+function sortByDate(rows){
+  const key=r=>{
+    const nums=String(r.date).match(/\d+/g)||[];
+    // 年月日 → 补齐成可比较字符串
+    const [a1='0',b1='0',c1='0']=nums.length>=3?nums:(nums.length===2?['0',...nums]:['0','0',...nums]);
+    return [a1,b1,c1].map(x=>String(x).padStart(4,'0')).join('');
+  };
+  return rows.slice().map((r,i)=>({r,i})).sort((x,y)=>{
+    const k=key(x.r).localeCompare(key(y.r)); return k||x.i-y.i;
+  }).map(o=>o.r);
+}
+// 单客户底部文字总结
+function custNote(c,rows){
+  const dates=rows.map(r=>r.date).filter(Boolean);
+  const range=dates.length?`记录时间从 <b>${escapeHtml(dates[0])}</b> 到 <b>${escapeHtml(dates[dates.length-1])}</b>，`:'';
+  const dir=c.net>0?`净额为正，进账多于出账 <span class="g">¥${fmt(c.net)}</span>`
+        :c.net<0?`净额为负，出账多于进账 <span class="r">¥${fmt(-c.net)}</span>`
+        :`进出持平`;
+  return `<div class="summary-note">
+    <h4>📋 该客户汇总</h4>
+    <div>${range}共 <b>${rows.length}</b> 笔往来记录：
+      进账 <b>${c.inCount}</b> 笔合计 <span class="g">¥${fmt(c.inSum)}</span>，
+      出账 <b>${c.outCount}</b> 笔合计 <span class="r">¥${fmt(c.outSum)}</span>。</div>
+    <div style="margin-top:4px;">${dir}。</div>
+  </div>`;
 }
 
 /* ============ 下载 ============ */
@@ -510,13 +563,13 @@ function summaryAOA(){
   return aoa;
 }
 function custAOA(c){
-  const aoa=[['日期','类型','金额(元)','备注','来源文件']];
-  c.rows.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(r=>{
-    aoa.push([r.date||'',r.category==='income'?'进账':'出账',round2(r.amount),r.remark||'',r.source]);
+  const aoa=[['序号','日期','类型','金额(元)','备注']];
+  sortByDate(c.rows).forEach((r,i)=>{
+    aoa.push([i+1,r.date||'',r.category==='income'?'进账':'出账',round2(r.amount),r.remark||'']);
   });
-  aoa.push(['小计','进账',round2(c.inSum),'','']);
-  aoa.push(['小计','出账',round2(c.outSum),'','']);
-  aoa.push(['净额','',round2(c.net),'','']);
+  aoa.push(['','小计-进账','',round2(c.inSum),`${c.inCount}笔`]);
+  aoa.push(['','小计-出账','',round2(c.outSum),`${c.outCount}笔`]);
+  aoa.push(['','净额(进-出)','',round2(c.net),'']);
   return aoa;
 }
 function round2(n){return Math.round((n+Number.EPSILON)*100)/100;}
