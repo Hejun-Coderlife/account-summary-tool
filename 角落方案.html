@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>角落装饰 · 6 款式对比</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0a0d18;color:#dbe6f5;-webkit-font-smoothing:antialiased;padding:22px 18px 60px;}
+  .pgh{text-align:center;font-size:19px;font-weight:800;letter-spacing:1px;color:#cfe0ff;}
+  .pgs{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 26px;}
+  .vrow{max-width:1000px;margin:0 auto 34px;text-align:center;}
+  .vtag{display:inline-block;margin:0 auto 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#0a0d18;
+    background:linear-gradient(135deg,#8fd8ff,#c6a6ff);border-radius:999px;padding:4px 14px;}
+  .panel{position:relative;overflow:hidden;height:440px;border-radius:18px;border:1px solid #dfe4f0;
+    background:radial-gradient(125% 90% at 50% 0%,#eef2f8,#e6ebf4 65%,#dfe5f0);box-shadow:0 20px 50px rgba(0,0,0,.45);}
+  .fakecard{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:72%;height:160px;
+    background:#fff;border:1px solid #e0e5ee;border-radius:14px;box-shadow:0 14px 36px rgba(51,65,85,.10);
+    display:flex;align-items:center;justify-content:center;color:#aab3c6;font-size:14px;z-index:2;}
+  .cornerL,.cornerR{position:absolute;bottom:0;width:0;height:0;z-index:1;pointer-events:none;}
+  .cornerL{left:0;} .cornerR{right:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .pgend{text-align:center;color:#66799b;font-size:12px;margin-top:10px;}
+  .pgend b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <div class="pgh">角落装饰 · 6 个高级款式</div>
+  <div class="pgs">左下 / 右下两角不对称。中间白框代表内容卡片区。选好告诉我「用款式X」。</div>
+  <div id="host"></div>
+  <div class="pgend">纯 SVG + CSS 旋转，省性能 · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const GEARP='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z';
+let GI=0;
+function pos(o){return 'position:absolute;'+(o.side==='R'?'right:':'left:')+o.x+'px;bottom:'+o.bottom+'px;';}
+function anim(o){return o.dur?('animation:spin '+o.dur+'s linear infinite'+(o.rev?' reverse':'')+';transform-origin:center;'):'';}
+function gear(o){const id='g'+(GI++);
+  const grad='<defs><linearGradient id="'+id+'" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="'+o.c1+'"/><stop offset="1" stop-color="'+(o.c2||o.c1)+'"/></linearGradient></defs>';
+  const paint=o.fill?('fill="url(#'+id+')"'):('fill="none" stroke="'+o.c1+'" stroke-width="'+(o.sw||0.55)+'" stroke-linejoin="round"');
+  return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.5)+';'+anim(o)+'" viewBox="0 0 24 24">'+grad+'<path d="'+GEARP+'" '+paint+'/></svg>';}
+function ring(o){return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.4)+';'+anim(o)+'" viewBox="0 0 24 24">'+
+  '<circle cx="12" cy="12" r="'+o.r+'" fill="none" stroke="'+o.col+'" stroke-width="'+(o.sw||0.4)+'" stroke-dasharray="'+(o.dash||'1 1.6')+'"/></svg>';}
+function ticks(o){let ln='';for(let i=0;i<o.n;i++){const a=i/o.n*6.2832,c=Math.cos(a),s=Math.sin(a);
+    ln+='<line x1="'+(12+c*o.r1).toFixed(2)+'" y1="'+(12+s*o.r1).toFixed(2)+'" x2="'+(12+c*o.r2).toFixed(2)+'" y2="'+(12+s*o.r2).toFixed(2)+'" stroke="'+o.col+'" stroke-width="'+(o.sw||0.3)+'"/>';}
+  return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.45)+';'+anim(o)+'" viewBox="0 0 24 24">'+ln+'</svg>';}
+function glow(o){return '<div style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;border-radius:50%;background:radial-gradient(circle,'+o.col+',transparent 66%);opacity:'+(o.op||0.5)+';"></div>';}
+function trace(o){const d=o.side==='R'?'M96 96 L96 62 L72 42 L72 14 M72 42 L40 42 L20 24':'M4 96 L4 62 L28 42 L28 14 M28 42 L60 42 L80 24';
+  const nx=o.side==='R'?['96,62','72,14','20,24']:['4,62','28,14','80,24'];
+  let dots='';nx.forEach(p=>{const[a,b]=p.split(',');dots+='<circle cx="'+a+'" cy="'+b+'" r="2.6" fill="'+o.col+'"/>';});
+  return '<svg style="'+pos(o)+'width:'+o.w+'px;height:'+o.h+'px;opacity:'+(o.op||0.5)+';" viewBox="0 0 100 100" fill="none" stroke="'+o.col+'" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="'+d+'"/>'+dots+'</svg>';}
+
+const SL='#334155',SK='#0ea5e9',ST='#475569',SB='#38bdf8',SG='#64748b';
+const VARIANTS=[
+  {name:'款式 1 · 齿轮机组',
+   L:()=>gear({side:'L',sz:340,x:-170,bottom:-170,dur:30,fill:1,c1:SL,c2:SK,op:.5})+gear({side:'L',sz:118,x:142,bottom:150,dur:12,rev:1,fill:1,c1:ST,c2:SB,op:.55})+gear({side:'L',sz:76,x:238,bottom:64,dur:8,fill:1,c1:SG,c2:'#7dd3fc',op:.5}),
+   R:()=>gear({side:'R',sz:230,x:-95,bottom:-95,dur:24,rev:1,fill:1,c1:SL,c2:SK,op:.5})+gear({side:'R',sz:140,x:120,bottom:126,dur:13,fill:1,c1:ST,c2:SB,op:.55})},
+  {name:'款式 2 · 蓝图线框',
+   L:()=>ring({side:'L',sz:430,x:-215,bottom:-215,r:11,col:'#4f6a99',dash:'1 2',op:.5,dur:60})+gear({side:'L',sz:330,x:-165,bottom:-165,dur:40,fill:0,c1:'#3b5a8a',sw:.5,op:.55})+ticks({side:'L',sz:250,x:-125,bottom:-125,n:24,r1:10.5,r2:11.6,col:'#3b5a8a',op:.5}),
+   R:()=>gear({side:'R',sz:200,x:-62,bottom:-46,dur:34,fill:0,c1:'#3b5a8a',sw:.55,op:.55})+ring({side:'R',sz:264,x:-92,bottom:-78,r:11,col:'#4f6a99',dash:'0.6 2.4',op:.5})+ticks({side:'R',sz:300,x:-110,bottom:-96,n:36,r1:11,r2:11.7,col:'#4f6a99',op:.4})},
+  {name:'款式 3 · 单齿光晕',
+   L:()=>glow({side:'L',sz:360,x:-120,bottom:-120,col:'rgba(120,170,230,.45)',op:.7})+gear({side:'L',sz:400,x:-200,bottom:-200,dur:36,fill:1,c1:SL,c2:SK,op:.4}),
+   R:()=>glow({side:'R',sz:240,x:-70,bottom:-70,col:'rgba(120,170,230,.4)',op:.7})+gear({side:'R',sz:250,x:-100,bottom:-90,dur:28,rev:1,fill:1,c1:SL,c2:SK,op:.4})},
+  {name:'款式 4 · 齿轮电路',
+   L:()=>gear({side:'L',sz:240,x:-95,bottom:-95,dur:26,fill:1,c1:SL,c2:SK,op:.5})+trace({side:'L',x:120,bottom:96,w:200,h:200,col:'#3b6ea5',op:.55}),
+   R:()=>gear({side:'R',sz:170,x:-55,bottom:-46,dur:20,rev:1,fill:1,c1:SL,c2:SK,op:.5})+trace({side:'R',x:96,bottom:70,w:180,h:180,col:'#3b6ea5',op:.55})},
+  {name:'款式 5 · 描边叠层',
+   L:()=>gear({side:'L',sz:380,x:-190,bottom:-190,dur:44,fill:0,c1:'#7c8aa5',sw:.5,op:.5})+gear({side:'L',sz:150,x:118,bottom:118,dur:12,rev:1,fill:1,c1:SL,c2:SK,op:.6}),
+   R:()=>gear({side:'R',sz:220,x:-80,bottom:-70,dur:32,fill:0,c1:'#7c8aa5',sw:.55,op:.5})+gear({side:'R',sz:108,x:104,bottom:96,dur:10,fill:1,c1:ST,c2:SB,op:.6})},
+  {name:'款式 6 · 齿轮刻度环',
+   L:()=>ticks({side:'L',sz:360,x:-180,bottom:-180,n:48,r1:11,r2:11.7,col:'#3b5a8a',op:.5,dur:90})+ring({side:'L',sz:300,x:-150,bottom:-150,r:11,col:'#4f6a99',dash:'8 4',op:.5})+gear({side:'L',sz:190,x:-72,bottom:-72,dur:22,fill:1,c1:SL,c2:SK,op:.55}),
+   R:()=>ticks({side:'R',sz:250,x:-95,bottom:-80,n:32,r1:10.6,r2:11.6,col:'#4f6a99',op:.45,dur:70,rev:1})+gear({side:'R',sz:150,x:-52,bottom:-42,dur:18,rev:1,fill:1,c1:SL,c2:SK,op:.55})},
+];
+
+const host=document.getElementById('host');
+VARIANTS.forEach((v,i)=>{
+  const row=document.createElement('div');row.className='vrow';
+  row.innerHTML='<div class="vtag">'+v.name+'</div>'+
+    '<div class="panel"><div class="fakecard">内容卡片区（示意）</div>'+
+    '<div class="cornerL">'+v.L()+'</div><div class="cornerR">'+v.R()+'</div></div>';
+  host.appendChild(row);
+});
+</script>
+</body>
+</html>

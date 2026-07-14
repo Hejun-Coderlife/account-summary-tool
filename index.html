@@ -661,6 +661,44 @@ updateGenState();
   }
   requestAnimationFrame(frame);
 })();
+
+/* ===== 角落·钟表行星轮系（细齿+辐条镂空+轴孔） ===== */
+(function(){
+  const L=document.querySelector('.cornerL'),R=document.querySelector('.cornerR');
+  if(!L&&!R)return;
+  let GI=0;
+  const S1={c1:'#eef3fa',c2:'#a8b8d2',c3:'#5c7096'},S2={c1:'#dbe4f0',c2:'#8a9cba',c3:'#4a5e84'};
+  const pos=o=>'position:absolute;'+(o.side==='R'?'right:':'left:')+o.x+'px;bottom:'+o.bottom+'px;';
+  const anim=o=>o.dur?('animation:gspin '+o.dur+'s linear infinite'+(o.rev?' reverse':'')+';transform-origin:center;'):'';
+  function gear(o){
+    const id='cg'+(GI++),cx=50,cy=50,R2=47,t=o.t||3.0,Rr=R2-t,N=o.N||60,step=2*Math.PI/N;
+    const P=(r,a)=>((cx+r*Math.cos(a)).toFixed(2)+' '+(cy+r*Math.sin(a)).toFixed(2));
+    let teeth='';
+    for(let i=0;i<N;i++){const a=i*step-Math.PI/2;
+      teeth+=(i===0?'M':'L')+P(R2,a)+'L'+P(R2,a+step*0.40)+'L'+P(Rr,a+step*0.50)+'L'+P(Rr,a+step*0.90)+'L'+P(R2,a+step);}
+    teeth+='Z';
+    const rimInner=Rr-3.2,rev=r=>' M'+(cx+r).toFixed(2)+' '+cy+' A'+r+' '+r+' 0 1 0 '+(cx-r).toFixed(2)+' '+cy+' A'+r+' '+r+' 0 1 0 '+(cx+r).toFixed(2)+' '+cy+'Z';
+    const hubR=o.hubR||9.5,boreR=o.boreR||4.2,A=o.arms||5,wH=4.6,wR=2.8;
+    const grad='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="'+o.c1+'"/><stop offset=".5" stop-color="'+o.c2+'"/><stop offset="1" stop-color="'+o.c3+'"/></linearGradient></defs>';
+    const rim='<path d="'+teeth+rev(rimInner)+'" fill="url(#'+id+')" fill-rule="evenodd" stroke="'+o.c3+'" stroke-width="0.4" stroke-linejoin="round"/>';
+    let arms='';
+    for(let i=0;i<A;i++){const a=i/A*2*Math.PI-Math.PI/2,pa=a+Math.PI/2,px=Math.cos(pa),py=Math.sin(pa);
+      const hx=cx+Math.cos(a)*hubR,hy=cy+Math.sin(a)*hubR,rx=cx+Math.cos(a)*rimInner,ry=cy+Math.sin(a)*rimInner;
+      arms+='<path d="M'+(hx+px*wH/2).toFixed(2)+' '+(hy+py*wH/2).toFixed(2)+'L'+(rx+px*wR/2).toFixed(2)+' '+(ry+py*wR/2).toFixed(2)+'L'+(rx-px*wR/2).toFixed(2)+' '+(ry-py*wR/2).toFixed(2)+'L'+(hx-px*wH/2).toFixed(2)+' '+(hy-py*wH/2).toFixed(2)+'Z" fill="url(#'+id+')" stroke="'+o.c3+'" stroke-width="0.3"/>';}
+    const hub='<path d="M'+(cx+hubR)+' '+cy+' A'+hubR+' '+hubR+' 0 1 0 '+(cx-hubR)+' '+cy+' A'+hubR+' '+hubR+' 0 1 0 '+(cx+hubR)+' '+cy+'Z'+rev(boreR)+'" fill="url(#'+id+')" fill-rule="evenodd" stroke="'+o.c3+'" stroke-width="0.4"/>';
+    return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.8)+';'+anim(o)+'" viewBox="0 0 100 100">'+grad+rim+arms+hub+'</svg>';}
+  function ring(o){return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.4)+';'+anim(o)+'" viewBox="0 0 100 100">'+
+    '<circle cx="50" cy="50" r="'+(o.r||44)+'" fill="none" stroke="'+o.col+'" stroke-width="'+(o.sw||1.4)+'" stroke-dasharray="'+(o.dash||'3 4')+'"/></svg>';}
+  const G=(o,pal)=>gear(Object.assign({},pal,o));
+  if(L)L.innerHTML=ring({side:'L',sz:300,x:-70,bottom:-70,r:44,col:'#5c7096',sw:5,dash:'2 3',op:.4,dur:150})+
+    G({side:'L',sz:118,x:92,bottom:92,N:20,dur:20,op:.82},S1)+
+    G({side:'L',sz:80,x:150,bottom:118,N:14,dur:14,rev:1,arms:4,op:.78},S2)+
+    G({side:'L',sz:80,x:58,bottom:150,N:14,dur:14,rev:1,arms:4,op:.78},S2)+
+    G({side:'L',sz:80,x:104,bottom:36,N:14,dur:14,rev:1,arms:4,op:.78},S2);
+  if(R)R.innerHTML=G({side:'R',sz:126,x:58,bottom:70,N:20,dur:20,op:.82},S1)+
+    G({side:'R',sz:84,x:122,bottom:96,N:14,dur:14,rev:1,arms:4,op:.78},S2)+
+    G({side:'R',sz:84,x:34,bottom:32,N:14,dur:14,rev:1,arms:4,op:.78},S2);
+})();
 </script>
 </body>
 </html>

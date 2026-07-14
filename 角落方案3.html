@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>角落装饰 · 钟表精密齿轮 6 款</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0a0d18;color:#dbe6f5;-webkit-font-smoothing:antialiased;padding:22px 18px 60px;}
+  .pgh{text-align:center;font-size:19px;font-weight:800;letter-spacing:1px;color:#cfe0ff;}
+  .pgs{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 26px;}
+  .vrow{max-width:1000px;margin:0 auto 34px;text-align:center;}
+  .vtag{display:inline-block;margin:0 auto 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#0a0d18;
+    background:linear-gradient(135deg,#8fd8ff,#c6a6ff);border-radius:999px;padding:4px 14px;}
+  .panel{position:relative;overflow:hidden;height:450px;border-radius:18px;border:1px solid #dfe4f0;
+    background:radial-gradient(125% 90% at 50% 0%,#eef2f8,#e6ebf4 65%,#dfe5f0);box-shadow:0 20px 50px rgba(0,0,0,.45);}
+  .fakecard{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:72%;height:160px;
+    background:#fff;border:1px solid #e0e5ee;border-radius:14px;box-shadow:0 14px 36px rgba(51,65,85,.10);
+    display:flex;align-items:center;justify-content:center;color:#aab3c6;font-size:14px;z-index:2;}
+  .cornerL,.cornerR{position:absolute;bottom:0;width:0;height:0;z-index:1;pointer-events:none;}
+  .cornerL{left:0;} .cornerR{right:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .pgend{text-align:center;color:#66799b;font-size:12px;margin-top:10px;}
+  .pgend b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <div class="pgh">角落装饰 · 钟表精密齿轮 6 款</div>
+  <div class="pgs">钟表轮系样式：细密轮齿 + 薄轮缘 + 辐条镂空 + 轴孔，慢速咬合传动。左右两角不对称。</div>
+  <div id="host"></div>
+  <div class="pgend">纯 SVG + CSS，省性能 · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+let GI=0;
+function pos(o){return 'position:absolute;'+(o.side==='R'?'right:':'left:')+o.x+'px;bottom:'+o.bottom+'px;';}
+function anim(o){return o.dur?('animation:spin '+o.dur+'s linear infinite'+(o.rev?' reverse':'')+';transform-origin:center;'):'';}
+// 钟表轮：细齿薄轮缘 + 辐条镂空 + 轮毂轴孔
+function gear(o){
+  const id='g'+(GI++),cx=50,cy=50,R=47,t=o.t||3.0,Rr=R-t,N=o.N||60,step=2*Math.PI/N;
+  const P=(r,a)=>((cx+r*Math.cos(a)).toFixed(2)+' '+(cy+r*Math.sin(a)).toFixed(2));
+  let teeth='';
+  for(let i=0;i<N;i++){const a=i*step-Math.PI/2;
+    const a1=a,a2=a+step*0.40,a3=a+step*0.50,a4=a+step*0.90,a5=a+step;
+    teeth+=(i===0?'M':'L')+P(R,a1)+'L'+P(R,a2)+'L'+P(Rr,a3)+'L'+P(Rr,a4)+'L'+P(R,a5);}
+  teeth+='Z';
+  const rimInner=(o.rimInner!=null?o.rimInner:Rr-3.2);
+  const rev=(r)=>' M'+(cx+r).toFixed(2)+' '+cy+' A'+r+' '+r+' 0 1 0 '+(cx-r).toFixed(2)+' '+cy+' A'+r+' '+r+' 0 1 0 '+(cx+r).toFixed(2)+' '+cy+'Z';
+  const hubR=o.hubR||9.5,boreR=o.boreR||4.2,A=o.arms||5,wH=o.armWH||4.6,wR=o.armWR||2.8;
+  const grad='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="'+o.c1+'"/><stop offset=".5" stop-color="'+o.c2+'"/><stop offset="1" stop-color="'+o.c3+'"/></linearGradient></defs>';
+  const rim='<path d="'+teeth+rev(rimInner)+'" fill="url(#'+id+')" fill-rule="evenodd" stroke="'+o.c3+'" stroke-width="0.4" stroke-linejoin="round"/>';
+  let arms='';
+  for(let i=0;i<A;i++){const a=i/A*2*Math.PI-Math.PI/2,pa=a+Math.PI/2,px=Math.cos(pa),py=Math.sin(pa);
+    const hx=cx+Math.cos(a)*hubR,hy=cy+Math.sin(a)*hubR,rx=cx+Math.cos(a)*rimInner,ry=cy+Math.sin(a)*rimInner;
+    arms+='<path d="M'+(hx+px*wH/2).toFixed(2)+' '+(hy+py*wH/2).toFixed(2)+'L'+(rx+px*wR/2).toFixed(2)+' '+(ry+py*wR/2).toFixed(2)+
+      'L'+(rx-px*wR/2).toFixed(2)+' '+(ry-py*wR/2).toFixed(2)+'L'+(hx-px*wH/2).toFixed(2)+' '+(hy-py*wH/2).toFixed(2)+'Z" fill="url(#'+id+')" stroke="'+o.c3+'" stroke-width="0.3"/>';}
+  const hub='<path d="M'+(cx+hubR)+' '+cy+' A'+hubR+' '+hubR+' 0 1 0 '+(cx-hubR)+' '+cy+' A'+hubR+' '+hubR+' 0 1 0 '+(cx+hubR)+' '+cy+'Z'+rev(boreR)+'" fill="url(#'+id+')" fill-rule="evenodd" stroke="'+o.c3+'" stroke-width="0.4"/>';
+  return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.85)+';'+anim(o)+'" viewBox="0 0 100 100">'+grad+rim+arms+hub+'</svg>';}
+function ring(o){return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.4)+';'+anim(o)+'" viewBox="0 0 100 100">'+
+  '<circle cx="50" cy="50" r="'+(o.r||44)+'" fill="none" stroke="'+o.col+'" stroke-width="'+(o.sw||1.4)+'" stroke-dasharray="'+(o.dash||'3 4')+'"/></svg>';}
+function disc(o){const id='d'+(GI++);
+  return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.5)+';'+anim(o)+'" viewBox="0 0 100 100">'+
+  '<defs><radialGradient id="'+id+'" cx=".4" cy=".33" r=".75"><stop offset="0" stop-color="'+o.c1+'"/><stop offset="1" stop-color="'+o.c3+'"/></radialGradient></defs>'+
+  '<circle cx="50" cy="50" r="46" fill="url(#'+id+')" stroke="'+o.c3+'" stroke-width="0.8"/>'+
+  '<circle cx="50" cy="50" r="'+(o.inner||30)+'" fill="none" stroke="'+o.c3+'" stroke-width="1" opacity=".5"/></svg>';}
+function bolts(o){let c='';for(let i=0;i<o.n;i++){const a=i/o.n*6.2832-Math.PI/2,x=50+Math.cos(a)*o.r,y=50+Math.sin(a)*o.r;
+    c+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(o.rr||2.6)+'" fill="'+o.col+'"/>';}
+  return '<svg style="'+pos(o)+'width:'+o.sz+'px;height:'+o.sz+'px;opacity:'+(o.op||0.6)+';'+anim(o)+'" viewBox="0 0 100 100">'+c+'</svg>';}
+
+const S1={c1:'#eef3fa',c2:'#a8b8d2',c3:'#5c7096'},S2={c1:'#dbe4f0',c2:'#8a9cba',c3:'#4a5e84'},S3={c1:'#c8d3e4',c2:'#7688a8',c3:'#3f527a'};
+const B1={c1:'#f6ead0',c2:'#cda94e',c3:'#8c6c22'},B2={c1:'#ecdfb0',c2:'#c19c40',c3:'#7d5f1c'};
+function G(o,pal){return gear(Object.assign({},pal,o));}
+
+const VARIANTS=[
+  {name:'钟表 1 · 双轮咬合',
+   L:()=>G({side:'L',sz:360,x:-180,bottom:-180,N:56,dur:44,op:.85},S1)+G({side:'L',sz:230,x:82,bottom:82,N:34,dur:27,rev:1,op:.88},S2),
+   R:()=>G({side:'R',sz:250,x:-125,bottom:-125,N:44,dur:34,rev:1,op:.85},S1)+G({side:'R',sz:155,x:56,bottom:56,N:24,dur:18,arms:4,op:.88},S3)},
+  {name:'钟表 2 · 三轮传动',
+   L:()=>G({side:'L',sz:330,x:-165,bottom:-165,N:54,dur:42,op:.85},S1)+G({side:'L',sz:208,x:76,bottom:76,N:34,dur:27,rev:1,op:.88},S2)+G({side:'L',sz:138,x:252,bottom:54,N:22,dur:17,arms:4,op:.88},S3),
+   R:()=>G({side:'R',sz:230,x:-115,bottom:-115,N:42,dur:33,rev:1,op:.85},S1)+G({side:'R',sz:160,x:66,bottom:66,N:26,dur:20,arms:4,op:.88},S2)},
+  {name:'钟表 3 · 精密大轮',
+   L:()=>G({side:'L',sz:430,x:-215,bottom:-215,N:68,dur:56,arms:6,op:.85},S1),
+   R:()=>G({side:'R',sz:275,x:-137,bottom:-137,N:50,dur:40,rev:1,arms:6,op:.85},S2)},
+  {name:'钟表 4 · 机芯夹板',
+   L:()=>disc({side:'L',sz:320,x:-160,bottom:-160,op:.45},S3)+bolts({side:'L',sz:320,x:-160,bottom:-160,n:16,r:39,col:'#3f527a',rr:2.4,op:.55})+G({side:'L',sz:200,x:-100,bottom:-100,N:38,dur:30,arms:5,op:.9},S1),
+   R:()=>disc({side:'R',sz:210,x:-70,bottom:-55,op:.45},S3)+bolts({side:'R',sz:210,x:-70,bottom:-55,n:12,r:39,col:'#3f527a',rr:2.2,op:.55})+G({side:'R',sz:140,x:-42,bottom:-30,N:28,dur:22,rev:1,arms:4,op:.9},S1)},
+  {name:'钟表 5 · 行星轮系',
+   L:()=>ring({side:'L',sz:300,x:-70,bottom:-70,r:44,col:'#5c7096',sw:5,dash:'2 3',op:.5,dur:150})+
+     G({side:'L',sz:118,x:92,bottom:92,N:20,dur:20,op:.9},S1)+
+     G({side:'L',sz:80,x:150,bottom:118,N:14,dur:14,rev:1,arms:4,op:.9},S2)+
+     G({side:'L',sz:80,x:58,bottom:150,N:14,dur:14,rev:1,arms:4,op:.9},S2)+
+     G({side:'L',sz:80,x:104,bottom:36,N:14,dur:14,rev:1,arms:4,op:.9},S2),
+   R:()=>G({side:'R',sz:126,x:58,bottom:70,N:20,dur:20,op:.9},S1)+
+     G({side:'R',sz:84,x:122,bottom:96,N:14,dur:14,rev:1,arms:4,op:.9},S2)+
+     G({side:'R',sz:84,x:34,bottom:32,N:14,dur:14,rev:1,arms:4,op:.9},S2)},
+  {name:'钟表 6 · 黄铜机芯',
+   L:()=>G({side:'L',sz:350,x:-175,bottom:-175,N:60,dur:48,arms:6,op:.82},B1)+G({side:'L',sz:210,x:78,bottom:78,N:38,dur:30,rev:1,op:.86},B2),
+   R:()=>G({side:'R',sz:235,x:-117,bottom:-117,N:46,dur:36,rev:1,op:.82},B1)+G({side:'R',sz:150,x:58,bottom:58,N:28,dur:22,arms:4,op:.86},B2)},
+];
+
+const host=document.getElementById('host');
+VARIANTS.forEach(v=>{
+  const row=document.createElement('div');row.className='vrow';
+  row.innerHTML='<div class="vtag">'+v.name+'</div>'+
+    '<div class="panel"><div class="fakecard">内容卡片区（示意）</div>'+
+    '<div class="cornerL">'+v.L()+'</div><div class="cornerR">'+v.R()+'</div></div>';
+  host.appendChild(row);
+});
+</script>
+</body>
+</html>
