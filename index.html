@@ -235,6 +235,8 @@ const REMARK_KEYS=['备注','摘要','说明','附言','用途','品名'];
 function cleanNum(v){if(v==null||v==='')return 0;if(typeof v==='number')return v;
   const s=String(v).replace(/[,¥$￥\s元]/g,'').replace(/[（(].*?[)）]/g,'');const n=parseFloat(s);return isNaN(n)?0:n;}
 function cleanName(v){if(v==null)return '';return String(v).replace(/\s+/g,'').trim();}
+/* 内置默认标准名单（未上传「客户名汇总」时用它校验） */
+const DEFAULT_STD=new Set(MASTER_NAMES.map(cleanName));
 function fmt(n){return (Math.round((n+Number.EPSILON)*100)/100).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function round2(n){return Math.round((n+Number.EPSILON)*100)/100;}
 function todayCN(){const d=new Date();return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;}
@@ -349,7 +351,8 @@ function generate(){
     c.rows.push(row);}
   const customers=[...map.values()].map(c=>({...c,net:c.inSum-c.outSum}));
   customers.sort((a,b)=>(b.inSum+b.outSum)-(a.inSum+a.outSum));
-  const newNames=store.master?customers.filter(c=>!store.master.std.has(c.name)).map(c=>c.name):[];
+  const stdSet=store.master?store.master.std:DEFAULT_STD;
+  const newNames=customers.filter(c=>!stdSet.has(c.name)).map(c=>c.name);
   result={customers,newNames,
     totalIn:incomeRows.reduce((s,r)=>s+r.amount,0),totalOut:expenseRows.reduce((s,r)=>s+r.amount,0),
     inCount:incomeRows.length,outCount:expenseRows.length};
@@ -363,13 +366,13 @@ function dataPeriod(){if(!result)return '';
 function renderResult(){
   const card=document.getElementById('resultCard');card.classList.remove('hidden');const r=result;
   const wb=document.getElementById('warnBox');
-  if(store.master && r.newNames.length){
-    wb.innerHTML=`<div class="warn"><h4>⚠️ 发现 ${r.newNames.length} 个不在「客户名汇总」中的新客户名</h4>
-      <div>以下客户名未出现在客户名汇总表里（可能是新客户，或写法与标准名不一致），请核对并更新：</div>
+  const stdLabel=store.master?'「客户名汇总」标准名单':`内置默认名单（${DEFAULT_STD.size} 个客户）`;
+  if(r.newNames.length){
+    wb.innerHTML=`<div class="warn"><h4>⚠️ 发现 ${r.newNames.length} 个不在${stdLabel}中的新客户名</h4>
+      <div>以下客户名未出现在${stdLabel}里（可能是新客户，或写法与标准名不一致），请核对并更新：</div>
       <div class="names">${r.newNames.map(n=>`<span class="chip">${escapeHtml(n)}</span>`).join('')}</div>
       <button class="btn ghost sm" onclick="downloadNewNames()">下载新客户名清单</button></div>`;}
-  else if(store.master){wb.innerHTML=`<div class="warn ok"><h4>✓ 全部 ${r.customers.length} 个客户名都在「客户名汇总」标准名单中</h4></div>`;}
-  else wb.innerHTML='';
+  else{wb.innerHTML=`<div class="warn ok"><h4>✓ 全部 ${r.customers.length} 个客户名都在${stdLabel}中</h4></div>`;}
   document.getElementById('stats').innerHTML=`
     <div class="stat in"><div class="k">进账合计（收入）</div><div class="v">¥${fmt(r.totalIn)}</div><div class="k">${r.inCount} 笔</div></div>
     <div class="stat out"><div class="k">开票合计</div><div class="v">¥${fmt(r.totalOut)}</div><div class="k">${r.outCount} 笔</div></div>
