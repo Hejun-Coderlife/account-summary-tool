@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>表头图标 · 10 个科技风</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0c1020;color:#dbe6f5;min-height:100vh;padding:24px 22px 48px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:800;letter-spacing:1px;text-align:center;color:#cfe0ff;}
+  .sub{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 26px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1160px;margin:0 auto;}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;}}
+  .card{border-radius:12px;overflow:hidden;border:1px solid #1e2947;background:#0a0e1c;box-shadow:0 10px 26px rgba(0,0,0,.4);}
+  /* 仿真表头 */
+  .bar{position:relative;overflow:hidden;padding:16px 22px;display:flex;align-items:center;justify-content:center;gap:13px;
+    background:linear-gradient(120deg,#0f1533 0%,#1c2350 46%,#2a1e57 100%);}
+  .bar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+    background:linear-gradient(90deg,#38bdf8,#6366f1,#a855f7,#38bdf8);opacity:.85;}
+  .bar svg{width:34px;height:34px;flex:none;display:block;filter:drop-shadow(0 2px 7px rgba(99,132,241,.55));}
+  .bar .t{font-size:20px;font-weight:700;letter-spacing:1.2px;color:#f3f6ff;text-shadow:0 1px 12px rgba(120,140,255,.35);}
+  .label{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font-size:13px;}
+  .label .n{font-weight:700;color:#e7f0ff;}
+  .label .d{color:#8496b8;font-size:12px;}
+  /* 浅色对照条（看看放白底什么样） */
+  .light{background:#ffffff;padding:10px 16px;display:flex;align-items:center;gap:10px;border-top:1px solid #172038;}
+  .light svg{width:24px;height:24px;flex:none;}
+  .light span{font-size:14px;font-weight:700;color:#1f2540;letter-spacing:.5px;}
+  .hint{text-align:center;color:#66799b;font-size:12px;margin-top:26px;}
+  .hint b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <h1>表头图标 · 10 个科技风方案</h1>
+  <div class="sub">每个都放在「仿真表头 + 白底」两种场景里预览。选好告诉我「要图标几」，我就换到账目汇总工具上。</div>
+  <div class="grid" id="grid"></div>
+  <div class="hint">纯 <b>SVG 矢量</b>，任意放大不糊 · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+// 每个图标：{name, desc, svg(id)} —— svg 用函数生成，保证渐变 id 唯一
+function ICON(id, inner){
+  return '<svg viewBox="0 0 40 40" fill="none">'+
+    '<defs><linearGradient id="g'+id+'" x1="0" y1="1" x2="1" y2="0">'+
+    '<stop offset="0" stop-color="#38bdf8"/><stop offset=".52" stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient>'+
+    '<linearGradient id="gu'+id+'" x1="0" y1="1" x2="1" y2="0">'+
+    '<stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>'+
+    inner.replace(/@/g,id)+'</svg>';
+}
+const ICONS=[
+  {name:'柱状趋势',desc:'柱状图 + 上升趋势线',
+   svg:'<rect x="5" y="23" width="7" height="12" rx="2.4" fill="url(#g@)"/><rect x="16.5" y="15" width="7" height="20" rx="2.4" fill="url(#g@)"/><rect x="28" y="8" width="7" height="27" rx="2.4" fill="url(#g@)"/><path d="M8 18 L20 11 L32 5" stroke="#c7d2fe" stroke-width="1.8" stroke-linecap="round"/><circle cx="32" cy="5" r="2.2" fill="#e6ecff"/>'},
+  {name:'折线上扬',desc:'数据折线 + 上升箭头',
+   svg:'<polyline points="5,29 13,21 19,25 26,14 34,7" stroke="url(#g@)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 7 L34 7 L34 14" stroke="url(#g@)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="13" cy="21" r="2" fill="#e6ecff"/><circle cx="26" cy="14" r="2" fill="#e6ecff"/>'},
+  {name:'数据圆环',desc:'环形分段 · 占比',
+   svg:'<g transform="rotate(-90 20 20)"><circle cx="20" cy="20" r="12" stroke="#38bdf8" stroke-width="6" stroke-dasharray="30 45.4"/><circle cx="20" cy="20" r="12" stroke="#6366f1" stroke-width="6" stroke-dasharray="25 50.4" stroke-dashoffset="-30"/><circle cx="20" cy="20" r="12" stroke="#a855f7" stroke-width="6" stroke-dasharray="20.4 55" stroke-dashoffset="-55"/></g>'},
+  {name:'K线蜡烛',desc:'金融蜡烛图',
+   svg:'<line x1="10" y1="9" x2="10" y2="31" stroke="#38bdf8" stroke-width="1.6"/><rect x="7" y="14" width="6" height="11" rx="1.5" fill="url(#gu@)"/><line x1="20" y1="7" x2="20" y2="33" stroke="#a855f7" stroke-width="1.6"/><rect x="17" y="18" width="6" height="10" rx="1.5" fill="#f05a7a"/><line x1="30" y1="10" x2="30" y2="30" stroke="#38bdf8" stroke-width="1.6"/><rect x="27" y="13" width="6" height="12" rx="1.5" fill="url(#gu@)"/>'},
+  {name:'节点网络',desc:'客户往来网络',
+   svg:'<path d="M9 13 L20 25 M20 25 L30 11 M30 11 L33 23 M20 25 L14 32 M9 13 L30 11" stroke="url(#g@)" stroke-width="1.5" opacity=".75"/><circle cx="9" cy="13" r="3" fill="url(#g@)"/><circle cx="20" cy="25" r="3.6" fill="url(#g@)"/><circle cx="30" cy="11" r="3" fill="url(#g@)"/><circle cx="33" cy="23" r="2.4" fill="#c7d2fe"/><circle cx="14" cy="32" r="2.4" fill="#c7d2fe"/>'},
+  {name:'立体数据块',desc:'等距 3D 立方体',
+   svg:'<path d="M20 5 L32 12 L20 19 L8 12 Z" fill="url(#g@)"/><path d="M8 12 L20 19 L20 33 L8 26 Z" fill="#4f5bd5" opacity=".92"/><path d="M32 12 L20 19 L20 33 L32 26 Z" fill="#7c3aed" opacity=".88"/>'},
+  {name:'芯片六边形',desc:'六边形 + 引脚',
+   svg:'<path d="M20 5 L32 12 L32 26 L20 33 L8 26 L8 12 Z" stroke="url(#g@)" stroke-width="2.4" fill="rgba(99,102,241,.14)"/><rect x="15.5" y="15.5" width="9" height="9" rx="1.5" fill="url(#g@)"/><path d="M20 5 V2 M8 12 L5 10 M32 12 L35 10 M8 26 L5 28 M32 26 L35 28 M20 33 V36" stroke="#8fa4ff" stroke-width="1.6" stroke-linecap="round"/>'},
+  {name:'数据库',desc:'堆叠圆柱 · 数据源',
+   svg:'<path d="M8 11 C8 8.5 13 7 20 7 C27 7 32 8.5 32 11 L32 29 C32 31.5 27 33 20 33 C13 33 8 31.5 8 29 Z" fill="rgba(99,102,241,.18)" stroke="url(#g@)" stroke-width="2"/><ellipse cx="20" cy="11" rx="12" ry="4" fill="url(#g@)"/><path d="M8 20 C8 22.5 13 24 20 24 C27 24 32 22.5 32 20" stroke="#8fa4ff" stroke-width="1.6"/>'},
+  {name:'雷达图',desc:'极坐标 · 多维评分',
+   svg:'<polygon points="20,7 31.3,13.5 31.3,26.5 20,33 8.7,26.5 8.7,13.5" stroke="#3a4a7a" stroke-width="1.4"/><polygon points="20,13 26.1,16.5 26.1,23.5 20,27 13.9,23.5 13.9,16.5" stroke="#3a4a7a" stroke-width="1.2"/><polygon points="20,9 30,15 26,25 20,30 11,23 13,15" fill="rgba(99,132,241,.35)" stroke="url(#g@)" stroke-width="2"/>'},
+  {name:'账盾',desc:'盾牌 + 图表 · 稳健',
+   svg:'<path d="M20 5 L32 9 L32 20 C32 28 26.5 32 20 35 C13.5 32 8 28 8 20 L8 9 Z" fill="rgba(99,102,241,.14)" stroke="url(#g@)" stroke-width="2.2"/><rect x="13" y="21" width="3.4" height="6" rx="1" fill="#7dd3fc"/><rect x="18.3" y="17" width="3.4" height="10" rx="1" fill="#818cf8"/><rect x="23.6" y="13" width="3.4" height="14" rx="1" fill="#c084fc"/>'},
+];
+
+const grid=document.getElementById('grid');
+ICONS.forEach((ic,i)=>{
+  const n=i+1;
+  const svg=ICON(n, ic.svg);
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML=
+    '<div class="bar">'+svg+'<span class="t">客户账目汇总工具</span></div>'+
+    '<div class="light">'+svg+'<span>客户账目汇总工具</span></div>'+
+    '<div class="label"><span class="n">图标 '+n+' · '+ic.name+'</span><span class="d">'+ic.desc+'</span></div>';
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>

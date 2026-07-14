@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>背景方案 · 挑一个</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#06060e;color:#e8ecff;min-height:100vh;padding:22px 22px 40px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:700;letter-spacing:1px;text-align:center;
+    background:linear-gradient(92deg,#eaf0ff,#8fb4ff,#c9a4ff,#eaf0ff);background-size:220% 100%;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+    animation:shine 6s linear infinite;}
+  @keyframes shine{to{background-position:220% 0;}}
+  .sub{text-align:center;color:#9aa4d8;font-size:13px;margin:8px 0 22px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1280px;margin:0 auto;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .tile{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:16/9;cursor:pointer;
+    border:1px solid rgba(124,146,255,.22);box-shadow:0 18px 44px rgba(3,5,20,.5);
+    transition:transform .18s,box-shadow .18s,border-color .18s;}
+  .tile:hover{transform:translateY(-4px);border-color:rgba(140,170,255,.55);box-shadow:0 26px 60px rgba(40,80,220,.35);}
+  .tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .tile .meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 16px;
+    background:linear-gradient(180deg,transparent,rgba(4,5,16,.72));pointer-events:none;}
+  .tile .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;color:#0a0c1e;
+    background:linear-gradient(135deg,#7cc7ff,#c39bff);border-radius:6px;padding:2px 9px;margin-bottom:7px;}
+  .tile .name{font-size:16px;font-weight:700;}
+  .tile .desc{font-size:12px;color:#b9c1e8;margin-top:3px;}
+  .tile .expand{position:absolute;top:12px;right:14px;z-index:2;font-size:11px;color:#cdd5f8;
+    background:rgba(10,14,34,.55);border:1px solid rgba(124,146,255,.3);border-radius:999px;padding:4px 11px;
+    opacity:0;transition:.18s;pointer-events:none;}
+  .tile:hover .expand{opacity:1;}
+  /* 全屏 */
+  .tile.full{position:fixed;inset:0;z-index:100;aspect-ratio:auto;border-radius:0;border:none;transform:none;margin:0;}
+  .tile.full .expand{opacity:1;font-size:13px;padding:8px 16px;}
+  .hint{text-align:center;color:#7f88b8;font-size:12px;margin-top:22px;}
+  .hint b{color:#c9d2ff;}
+</style>
+</head>
+<body>
+  <h1>动态背景 · 4 个方案</h1>
+  <div class="sub">点任意一个可全屏细看，再点一次（或按 Esc）返回。选好了告诉我「要方案几」，我就把它装到账目汇总工具上。</div>
+  <div class="grid" id="grid"></div>
+  <div class="hint">全部为 <b>WebGL / GPU</b> 绘制、已限制渲染分辨率，省性能不卡 · 只是预览，<b>不会改动你的网站</b></div>
+
+<script>
+const SCENES=[
+  {tag:'方案 1',name:'极光星云',desc:'深空流动极光，安静、电影感、高级',init:initAurora},
+  {tag:'方案 2',name:'星海穿梭',desc:'3D 光点朝你飞来，有景深、有速度感',init:initStars},
+  {tag:'方案 3',name:'霓虹网格',desc:'赛博朋克透视网格 + 落日，很炫',init:initGrid},
+  {tag:'方案 4',name:'悬浮光球',desc:'彩色光球缓慢漂浮融合，柔和梦幻',init:initOrbs},
+];
+
+const grid=document.getElementById('grid');
+const resizers=[];
+SCENES.forEach((s,i)=>{
+  const tile=document.createElement('div');tile.className='tile';
+  tile.innerHTML=`<canvas></canvas>
+    <div class="expand">⤢ 全屏预览</div>
+    <div class="meta"><span class="tag">${s.tag}</span><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div>`;
+  grid.appendChild(tile);
+  const cv=tile.querySelector('canvas');
+  const r=s.init(cv);
+  if(r) resizers.push(r);
+  tile.addEventListener('click',()=>{
+    const wasFull=tile.classList.contains('full');
+    document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));
+    if(!wasFull)tile.classList.add('full');
+    requestAnimationFrame(()=>resizers.forEach(fn=>fn()));
+  });
+});
+addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));requestAnimationFrame(()=>resizers.forEach(fn=>fn()));}});
+addEventListener('resize',()=>resizers.forEach(fn=>fn()));
+
+/* ============ 通用 WebGL 帮手 ============ */
+function makeGL(cv){
+  let gl;try{gl=cv.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false});}catch(e){}
+  if(!gl){cv.style.background='linear-gradient(140deg,#15123a,#0a0a1c)';return null;}
+  return gl;
+}
+function sh(gl,t,src){const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.warn('shader:',gl.getShaderInfoLog(o));return o;}
+function prog(gl,vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl,gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl,gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))console.warn('link:',gl.getProgramInfoLog(p));return p;}
+function sizer(cv,gl){return function(){
+  const dpr=Math.min(devicePixelRatio||1,1.4);
+  const w=Math.max(1,Math.floor(cv.clientWidth*dpr)),h=Math.max(1,Math.floor(cv.clientHeight*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  gl.viewport(0,0,cv.width,cv.height);};}
+
+/* ============ 方案1：极光星云 ============ */
+function initAurora(cv){
+  const gl=makeGL(cv);if(!gl)return;
+  const vs=`attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}`;
+  const fs=`precision highp float;uniform vec2 uRes;uniform float uT;
+    float hash(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}
+    float noise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);
+      float a=hash(i),b=hash(i+vec2(1.0,0.0)),c=hash(i+vec2(0.0,1.0)),d=hash(i+vec2(1.0,1.0));
+      return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}
+    float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);
+      for(int i=0;i<5;i++){v+=a*noise(p);p=m*p;a*=0.5;}return v;}
+    void main(){vec2 p=(gl_FragCoord.xy-0.5*uRes)/uRes.y;float t=uT*0.04;
+      vec2 q=vec2(fbm(p*1.4+vec2(0.0,t)),fbm(p*1.4+vec2(5.2,-t)));
+      float f=fbm(p*2.0+q*1.7+vec2(t*0.6,0.0));
+      vec3 col=vec3(0.02,0.02,0.06);
+      col=mix(col,vec3(0.18,0.24,0.85),smoothstep(0.15,0.95,f));
+      col=mix(col,vec3(0.62,0.30,0.95),smoothstep(0.55,1.15,f)*(0.32+0.5*q.x));
+      float g=fbm(p*2.6-q*2.0+vec2(-t,t*0.7));
+      col=mix(col,vec3(0.12,0.70,1.0),smoothstep(0.6,1.05,g)*0.5);
+      float vig=smoothstep(1.3,0.15,length(p));col*=0.32+0.68*vig;
+      col=col/(col+0.7);gl_FragColor=vec4(col,1.0);}`;
+  const pr=prog(gl,vs,fs);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'p'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  const resize=sizer(cv,gl);resize();
+  const t0=performance.now();
+  (function loop(now){resize();gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aP);gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.TRIANGLES,0,3);requestAnimationFrame(loop);})(t0);
+  return resize;
+}
+
+/* ============ 方案2：星海穿梭 ============ */
+function initStars(cv){
+  const gl=makeGL(cv);if(!gl)return;
+  const vs=`attribute vec3 seed;uniform float uT;uniform vec2 uRes;varying float vB;
+    void main(){float z=fract(seed.z-uT*0.10);z=z*0.97+0.03;float persp=1.0/z;
+      vec2 sp=seed.xy*persp;sp.x*=uRes.y/uRes.x;
+      gl_Position=vec4(sp,0.0,1.0);
+      gl_PointSize=persp*2.6*(0.5+seed.x*seed.x)*(uRes.y/700.0);
+      vB=smoothstep(1.0,0.0,z);}`;
+  const fs=`precision mediump float;varying float vB;
+    void main(){vec2 d=gl_PointCoord-0.5;float r=dot(d,d);if(r>0.25)discard;
+      float a=smoothstep(0.25,0.0,r);
+      vec3 c=mix(vec3(0.55,0.75,1.0),vec3(0.85,0.9,1.0),vB);
+      gl_FragColor=vec4(c,a*vB);}`;
+  const pr=prog(gl,vs,fs);gl.useProgram(pr);
+  const N=520,arr=new Float32Array(N*3);let s=771.3;const rnd=()=>{s=(s*9301+49297)%233280;return s/233280;};
+  for(let i=0;i<N;i++){arr[i*3]=rnd()*2-1;arr[i*3+1]=rnd()*2-1;arr[i*3+2]=rnd();}
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,arr,gl.STATIC_DRAW);
+  const aSeed=gl.getAttribLocation(pr,'seed'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+  const resize=sizer(cv,gl);resize();const t0=performance.now();
+  (function loop(now){resize();gl.useProgram(pr);
+    gl.clearColor(0.015,0.02,0.05,1.0);gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(aSeed);gl.vertexAttribPointer(aSeed,3,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.POINTS,0,N);requestAnimationFrame(loop);})(t0);
+  return resize;
+}
+
+/* ============ 方案3：霓虹网格 ============ */
+function initGrid(cv){
+  const gl=makeGL(cv);if(!gl)return;
+  const vs=`attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}`;
+  const fs=`precision highp float;uniform vec2 uRes;uniform float uT;
+    void main(){vec2 uv=(gl_FragCoord.xy-0.5*uRes)/uRes.y;
+      vec3 col=mix(vec3(0.05,0.02,0.10),vec3(0.01,0.01,0.05),smoothstep(-0.1,0.7,uv.y));
+      float sd=length((uv-vec2(0.0,0.16))*vec2(1.0,1.2));
+      float sun=smoothstep(0.30,0.285,sd);
+      float band=step(0.0,sin((uv.y-0.16)*70.0-uT*1.5));
+      vec3 sunc=mix(vec3(1.0,0.85,0.35),vec3(1.0,0.25,0.55),clamp((0.32-uv.y)/0.5,0.0,1.0));
+      col=mix(col,sunc,sun*(uv.y>0.16?band:1.0));
+      col+=sunc*smoothstep(0.55,0.0,sd)*0.12;
+      if(uv.y<0.0){float persp=0.42/(-uv.y+0.002);
+        float gx=uv.x*persp*2.2;float gz=persp*2.2-uT*1.4;
+        float fx=abs(fract(gx)-0.5),fz=abs(fract(gz)-0.5);
+        float line=smoothstep(0.055,0.0,min(fx,fz));
+        vec3 gc=mix(vec3(0.15,0.95,1.0),vec3(0.9,0.2,0.85),smoothstep(0.0,1.0,-uv.y*2.6));
+        col+=gc*line*smoothstep(0.0,0.45,-uv.y)*1.3;}
+      col=col/(col+0.75);gl_FragColor=vec4(col,1.0);}`;
+  const pr=prog(gl,vs,fs);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'p'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  const resize=sizer(cv,gl);resize();const t0=performance.now();
+  (function loop(now){resize();gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aP);gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.TRIANGLES,0,3);requestAnimationFrame(loop);})(t0);
+  return resize;
+}
+
+/* ============ 方案4：悬浮光球 ============ */
+function initOrbs(cv){
+  const gl=makeGL(cv);if(!gl)return;
+  const vs=`attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}`;
+  const fs=`precision highp float;uniform vec2 uRes;uniform float uT;
+    void main(){vec2 uv=(gl_FragCoord.xy-0.5*uRes)/uRes.y;
+      vec3 col=vec3(0.03,0.03,0.07);
+      for(int i=0;i<6;i++){float fi=float(i);
+        vec2 c=vec2(sin(uT*0.25+fi*1.7)*0.85,cos(uT*0.21+fi*2.3)*0.52);
+        float d=length(uv-c);
+        vec3 oc=fi<0.5?vec3(0.20,0.60,1.0):fi<1.5?vec3(0.70,0.30,1.0):fi<2.5?vec3(0.10,0.85,0.90):fi<3.5?vec3(0.95,0.40,0.70):fi<4.5?vec3(0.35,0.45,1.0):vec3(0.60,0.75,1.0);
+        col+=oc*0.055/(d*d+0.04);}
+      float vig=smoothstep(1.3,0.2,length(uv));col*=0.5+0.5*vig;
+      col=col/(col+0.85);gl_FragColor=vec4(col,1.0);}`;
+  const pr=prog(gl,vs,fs);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'p'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  const resize=sizer(cv,gl);resize();const t0=performance.now();
+  (function loop(now){resize();gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aP);gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.TRIANGLES,0,3);requestAnimationFrame(loop);})(t0);
+  return resize;
+}
+</script>
+</body>
+</html>

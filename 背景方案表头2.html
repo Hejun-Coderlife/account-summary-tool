@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动态表头 · 第二批 10 个</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0b0f1c;color:#dbe6f5;min-height:100vh;padding:24px 22px 48px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:800;letter-spacing:1px;text-align:center;color:#cfe0ff;}
+  .sub{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 24px;}
+  .list{display:flex;flex-direction:column;gap:14px;max-width:1100px;margin:0 auto;}
+  .card{border-radius:12px;overflow:hidden;border:1px solid #1e2947;background:#0a0e1c;box-shadow:0 10px 24px rgba(0,0,0,.4);}
+  .bar{position:relative;overflow:hidden;height:76px;background:#0f1533;}
+  .bar canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .bar .fg{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;gap:13px;pointer-events:none;}
+  .bar .fg svg{width:32px;height:32px;flex:none;filter:drop-shadow(0 2px 7px rgba(0,0,0,.5));}
+  .bar .fg span{font-size:20px;font-weight:700;letter-spacing:1.2px;color:#f7f9ff;text-shadow:0 1px 12px rgba(0,0,0,.45);}
+  .bar .err{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;color:#ff6b7a;font-size:12px;white-space:pre-wrap;padding:8px;text-align:center;background:#0a0e1c;}
+  .label{display:flex;align-items:baseline;gap:10px;padding:9px 16px;font-size:13px;}
+  .label .n{font-weight:700;color:#e7f0ff;}
+  .label .d{color:#8496b8;font-size:12px;}
+  .hint{text-align:center;color:#66799b;font-size:12px;margin-top:26px;}
+  .hint b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <h1>动态表头 · 第二批 10 个（全新动效）</h1>
+  <div class="sub">与第一批不重样，各配一套配色。选好告诉我「要表头 B几」（这批用 B 编号）。</div>
+  <div class="list" id="list"></div>
+  <div class="hint">全部 <b>WebGL / GPU</b> 手写着色器 · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const LOGO='<svg viewBox="0 0 36 36" fill="none"><defs><linearGradient id="lg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#eaf2ff"/><stop offset="1" stop-color="#cdd9ff"/></linearGradient></defs><rect x="4" y="21" width="6.5" height="11" rx="2.2" fill="url(#lg)"/><rect x="14.75" y="12" width="6.5" height="20" rx="2.2" fill="url(#lg)"/><rect x="25.5" y="5" width="6.5" height="27" rx="2.2" fill="url(#lg)"/><path d="M7.25 16 L18 7.5 L28.75 3" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" opacity=".85"/></svg>';
+
+const H1='float h1(float n){return fract(sin(n)*43758.5453);}';
+const H2='float h2(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5453);}';
+function B(a,b){return 'vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec3 col=mix(vec3('+a+'),vec3('+b+'),uv.x);';}
+
+const SCENES=[
+  {name:'声谱柱',desc:'均衡器柱条跳动 · 蓝',helpers:'',body:B('0.05,0.08,0.20','0.09,0.12,0.30')+
+    'float bars=26.0;float bx=floor(uv.x*bars);float bf=fract(uv.x*bars);'+
+    'float hgt=0.22+0.55*(0.5+0.5*sin(uT*3.0+bx*0.7));'+
+    'float inBar=step(0.14,bf)*step(bf,0.86);'+
+    'float lit=step(uv.y,hgt)*inBar;'+
+    'col+=vec3(0.28,0.68,1.0)*lit*(0.35+0.65*uv.y);'},
+  {name:'同心波纹',desc:'圆环向外扩散 · 青绿',helpers:'',body:B('0.03,0.12,0.13','0.05,0.18,0.20')+
+    'vec2 P=vec2(uv.x*ar,uv.y);vec2 c=vec2(ar*0.5,0.5);float d=length(P-c);'+
+    'float rings=smoothstep(0.5,0.42,abs(fract(d*4.0-uT*0.8)-0.5));'+
+    'col+=vec3(0.2,0.88,0.75)*rings*0.42;'},
+  {name:'扫描线',desc:'CRT 扫描线+亮带 · 绿',helpers:'',body:B('0.02,0.10,0.06','0.04,0.15,0.09')+
+    'float sl=0.5+0.5*sin(gl_FragCoord.y*1.6);col*=0.72+0.28*sl;'+
+    'float scan=smoothstep(0.10,0.0,abs(fract(uv.y-uT*0.28)-0.5));'+
+    'col+=vec3(0.3,1.0,0.5)*scan*0.4;'},
+  {name:'粒子星云',desc:'柔光点漂浮 · 紫',helpers:H2,body:B('0.10,0.05,0.18','0.16,0.08,0.28')+
+    'vec2 P=vec2(uv.x*ar,uv.y);'+
+    'for(int i=0;i<3;i++){float fi=float(i);'+
+    'vec2 q=P*(3.0+fi*2.0)+vec2(uT*(0.10+fi*0.05),0.0);'+
+    'vec2 id=floor(q),f=fract(q)-0.5;float r=h2(id+fi*7.0);'+
+    'float dt=smoothstep(0.34,0.0,length(f))*step(0.70,r);'+
+    'col+=vec3(0.72,0.42,1.0)*dt*0.28;}'},
+  {name:'液态流体',desc:'融合光球流动 · 粉',helpers:'',body:B('0.13,0.04,0.13','0.20,0.07,0.22')+
+    'vec2 P=vec2(uv.x*ar,uv.y);float m=0.0;'+
+    'for(int i=0;i<4;i++){float fi=float(i);'+
+    'vec2 c=vec2(ar*0.5+cos(uT*0.5+fi*1.7)*ar*0.35,0.5+sin(uT*0.4+fi*2.1)*0.34);'+
+    'm+=0.030/(dot(P-c,P-c)+0.02);}'+
+    'col=mix(col,vec3(1.0,0.40,0.70),smoothstep(0.8,1.6,m));'+
+    'col=mix(col,vec3(0.62,0.32,0.96),smoothstep(1.5,2.6,m));'},
+  {name:'旋转射线',desc:'极坐标光芒旋转 · 金',helpers:'',body:B('0.13,0.08,0.04','0.20,0.12,0.05')+
+    'vec2 P=vec2(uv.x*ar,uv.y)-vec2(ar*0.5,0.5);float ang=atan(P.y,P.x);float r=length(P);'+
+    'float rays=0.5+0.5*sin(ang*10.0+uT*1.5);'+
+    'col+=vec3(1.0,0.66,0.20)*smoothstep(0.45,0.95,rays)*smoothstep(1.0,0.05,r)*0.5;'},
+  {name:'点阵波',desc:'圆点阵明暗波 · 蓝',helpers:'',body:B('0.05,0.07,0.20','0.10,0.11,0.30')+
+    'vec2 g=vec2(uv.x*ar,uv.y)*13.0;vec2 id=floor(g),f=fract(g)-0.5;'+
+    'float wave=0.5+0.5*sin(id.x*0.6-uT*2.0);float rad=0.10+0.28*wave;'+
+    'float dt=smoothstep(rad,rad-0.12,length(f));'+
+    'col+=vec3(0.35,0.62,1.0)*dt*0.5;'},
+  {name:'心电脉冲',desc:'心跳波形滚动 · 红',helpers:'',body:B('0.15,0.04,0.07','0.22,0.06,0.10')+
+    'float t=fract(uv.x*ar*0.45-uT*0.4);'+
+    'float dx=(t-0.55)*26.0;float r=exp(-dx*dx);'+
+    'float dx2=(t-0.48)*46.0;float q=exp(-dx2*dx2);'+
+    'float dx3=(t-0.62)*40.0;float sdip=exp(-dx3*dx3);'+
+    'float y=0.5+(r-q*0.35-sdip*0.30)*0.32;'+
+    'float glow=smoothstep(0.14,0.0,abs(uv.y-y));col+=vec3(0.9,0.2,0.3)*glow*0.22;'+
+    'float line=smoothstep(0.035,0.0,abs(uv.y-y));col+=vec3(1.0,0.35,0.42)*line*0.95;'},
+  {name:'等离子',desc:'多彩等离子涌动 · 幻彩',helpers:'',body:B('0.04,0.03,0.10','0.06,0.04,0.14')+
+    'vec2 P=uv*vec2(ar,1.0);'+
+    'float v=sin(P.x*6.0+uT)+sin(P.y*7.0-uT*1.1)+sin((P.x+P.y)*5.0+uT*0.7)+sin(length(P-vec2(ar*0.5,0.5))*9.0-uT*1.3);'+
+    'v*=0.25;'+
+    'vec3 pl=0.5+0.5*vec3(sin(v*3.1416),sin(v*3.1416+2.1),sin(v*3.1416+4.2));'+
+    'col=mix(col,pl,0.55);'},
+  {name:'光条流',desc:'分段光条向右流 · 靛紫',helpers:H1,body:B('0.07,0.06,0.20','0.14,0.10,0.32')+
+    'float rows=7.0;float ry=floor(uv.y*rows);float rf=fract(uv.y*rows);'+
+    'float inRow=step(0.25,rf)*step(rf,0.75);'+
+    'float seg=fract(uv.x*ar*1.5-uT*(0.4+h1(ry)*0.3));'+
+    'float lit=smoothstep(0.5,0.18,abs(seg-0.5))*inRow;'+
+    'col+=vec3(0.52,0.45,1.0)*lit*0.42;'},
+];
+
+function sh(gl,t,src){const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error((t===gl.VERTEX_SHADER?'顶点':'片元')+'着色器编译失败:\n'+gl.getShaderInfoLog(o));return o;}
+function prog(gl,vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl,gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl,gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('着色器链接失败:\n'+gl.getProgramInfoLog(p));return p;}
+function sizer(cv,gl){return function(){const dpr=Math.min(devicePixelRatio||1,1.5);
+  const w=Math.max(1,Math.floor(cv.clientWidth*dpr)),h=Math.max(1,Math.floor(cv.clientHeight*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}gl.viewport(0,0,cv.width,cv.height);};}
+function runFS(cv,helpers,body){
+  let gl;try{gl=cv.getContext('webgl',{alpha:false,antialias:false})||cv.getContext('experimental-webgl');}catch(e){}
+  if(!gl)throw new Error('浏览器不支持 WebGL');
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+  const fs='precision mediump float;uniform vec2 uRes;uniform float uT;\n'+helpers+'\nvoid main(){'+body+'gl_FragColor=vec4(col,1.0);}';
+  const pr=prog(gl,vs,fs);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'p'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  const resize=sizer(cv,gl);resize();addEventListener('resize',resize);const t0=performance.now();
+  function loop(now){resize();gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aP);gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.TRIANGLES,0,3);requestAnimationFrame(loop);}
+  requestAnimationFrame(loop);return resize;
+}
+
+const list=document.getElementById('list');
+SCENES.forEach((s,idx)=>{
+  const n=idx+1;
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<div class="bar"><canvas></canvas><div class="fg">'+LOGO+'<span>客户账目汇总工具</span></div></div>'+
+    '<div class="label"><span class="n">表头 B'+n+' · '+s.name+'</span><span class="d">'+s.desc+'</span></div>';
+  list.appendChild(card);
+  const cv=card.querySelector('canvas');
+  try{runFS(cv,s.helpers,s.body);}
+  catch(err){const d=document.createElement('div');d.className='err';
+    d.textContent='表头 B'+n+' 渲染失败：\n'+((err&&err.message)||err);card.querySelector('.bar').appendChild(d);console.error('scene',n,err);}
+});
+</script>
+</body>
+</html>

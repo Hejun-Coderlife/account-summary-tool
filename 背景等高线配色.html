@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>背景 · 微澜等高线 10 色系</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0b0f1c;color:#dbe6f5;min-height:100vh;padding:24px 22px 48px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:800;letter-spacing:1px;text-align:center;color:#cfe0ff;}
+  .sub{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 24px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1280px;margin:0 auto;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .tile{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:16/9;cursor:pointer;background:#f4f6fc;
+    border:1px solid #e3e7f2;box-shadow:0 12px 30px rgba(60,80,160,.14);transition:transform .18s,box-shadow .18s,border-color .18s;}
+  .tile:hover{transform:translateY(-4px);border-color:#c3ccec;box-shadow:0 20px 46px rgba(60,90,200,.20);}
+  .tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .tile .meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 16px;
+    background:linear-gradient(180deg,transparent,rgba(255,255,255,.88));pointer-events:none;}
+  .tile .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff;
+    background:linear-gradient(135deg,#7a90c8,#a6b0da);border-radius:6px;padding:2px 9px;margin-bottom:6px;}
+  .tile .name{font-size:15px;font-weight:800;color:#2a3050;}
+  .tile .expand{position:absolute;top:12px;right:14px;z-index:2;font-size:11px;color:#3a4270;
+    background:rgba(255,255,255,.78);border:1px solid #cbd4ee;border-radius:999px;padding:4px 11px;opacity:0;transition:.18s;pointer-events:none;}
+  .tile:hover .expand{opacity:1;}
+  .tile.full{position:fixed;inset:0;z-index:100;aspect-ratio:auto;border-radius:0;border:none;transform:none;margin:0;}
+  .tile.full .expand{opacity:1;font-size:13px;padding:8px 16px;}
+  .err{max-width:1280px;margin:0 auto;color:#ff6b7a;font-size:13px;text-align:center;padding:10px;}
+  .hint{text-align:center;color:#66799b;font-size:12px;margin-top:26px;}
+  .hint b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <h1>微澜等高线背景 · 10 色系</h1>
+  <div class="sub">整页背景用。鼠标划过，等高线会在光标处隆起、微微发亮。点图块全屏，再点/Esc 返回。选好告诉我「要等高·X色」。</div>
+  <div class="grid" id="grid"></div>
+  <div class="hint">整页仅用 <b>1 个 WebGL 上下文</b> · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const PALETTES=[
+  {name:'蓝灰',   base:[0.990,0.994,1.0], line:[0.40,0.58,0.78]},
+  {name:'薄荷绿', base:[0.985,1.0,0.992], line:[0.24,0.68,0.55]},
+  {name:'薰衣草', base:[0.992,0.986,1.0], line:[0.55,0.48,0.86]},
+  {name:'蜜桃橙', base:[1.0,0.992,0.975], line:[0.92,0.58,0.36]},
+  {name:'樱粉',   base:[1.0,0.984,0.992], line:[0.93,0.44,0.68]},
+  {name:'青色',   base:[0.982,0.994,1.0], line:[0.16,0.66,0.82]},
+  {name:'石墨灰', base:[0.992,0.994,1.0], line:[0.42,0.48,0.58]},
+  {name:'玫红',   base:[1.0,0.984,0.986], line:[0.86,0.33,0.42]},
+  {name:'橄榄金', base:[1.0,1.0,0.972], line:[0.72,0.60,0.22]},
+  {name:'天蓝',   base:[0.982,0.99,1.0],  line:[0.32,0.58,0.96]},
+];
+
+const glcv=document.createElement('canvas');
+let gl=null;try{gl=glcv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true});}catch(e){}
+const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+const TOPO='precision mediump float;uniform vec2 uRes;uniform float uT;uniform vec3 uBase,uLine;uniform vec2 uMouse;uniform float uMh;'+
+  'float hn(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}'+
+  'float nz(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);'+
+  'float a=hn(i),b=hn(i+vec2(1.0,0.0)),c=hn(i+vec2(0.0,1.0)),d=hn(i+vec2(1.0,1.0));'+
+  'return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}'+
+  'float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<5;i++){v+=a*nz(p);p=m*p;a*=0.5;}return v;}'+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec2 P=uv*vec2(ar,1.0);'+
+  'vec2 mp=vec2(uMouse.x*ar,uMouse.y);float md=length(P-mp);float infl=exp(-md*md*5.0)*uMh;'+
+  'float h=fbm(P*1.6+vec2(uT*0.022,uT*0.014));'+
+  'h+=infl*0.35;'+
+  'vec3 col=uBase;'+
+  'float e=abs(fract(h*3.0-uT*0.06)-0.5);'+
+  'float line=smoothstep(0.482,0.5,e);'+
+  'col=mix(col,uLine,line*0.30);'+
+  'col=mix(col,uLine,exp(-md*md*9.0)*uMh*0.12);'+
+  'gl_FragColor=vec4(col,1.0);}';
+
+function mkProg(fsrc,uniforms){
+  function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fsrc));
+  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={};uniforms.forEach(n=>u[n]=gl.getUniformLocation(p,n));u.aP=gl.getAttribLocation(p,'p');return {p,u};
+}
+
+const CARDS=[];const grid=document.getElementById('grid');
+PALETTES.forEach((pal,i)=>{
+  const tile=document.createElement('div');tile.className='tile';
+  tile.innerHTML='<canvas></canvas><div class="expand">⤢ 全屏预览</div>'+
+    '<div class="meta"><span class="tag">等高 '+(i+1)+'</span><div class="name">'+pal.name+'</div></div>';
+  grid.appendChild(tile);
+  const cv=tile.querySelector('canvas');
+  CARDS.push({tile,cv,ctx:cv.getContext('2d'),pal,vis:true});
+  tile.addEventListener('click',()=>{
+    const wasFull=tile.classList.contains('full');
+    document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));
+    if(!wasFull)tile.classList.add('full');
+  });
+});
+addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));});
+
+if(!gl){const d=document.createElement('div');d.className='err';d.textContent='当前浏览器/设备不支持 WebGL，无法预览。';document.body.appendChild(d);}
+else{
+  let A,buf,ok=true;
+  try{A=mkProg(TOPO,['uRes','uT','uBase','uLine','uMouse','uMh']);
+    buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  }catch(err){ok=false;const d=document.createElement('div');d.className='err';d.textContent='着色器错误：'+err.message;document.body.appendChild(d);}
+
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const c=CARDS.find(x=>x.tile===e.target);if(c)c.vis=e.isIntersecting;}),{rootMargin:'100px'});
+  CARDS.forEach(c=>io.observe(c.tile));
+  let MX=-1,MY=-1;
+  addEventListener('mousemove',e=>{MX=e.clientX;MY=e.clientY;});
+  addEventListener('mouseout',e=>{if(!e.relatedTarget){MX=-1;MY=-1;}});
+
+  const t0=performance.now();
+  function frame(now){
+    if(!ok)return;
+    const t=(now-t0)/1000,dpr=Math.min(devicePixelRatio||1,1.4);
+    gl.useProgram(A.p);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(A.u.aP);gl.vertexAttribPointer(A.u.aP,2,gl.FLOAT,false,0,0);
+    for(const c of CARDS){
+      if(!c.vis)continue;
+      const cw=Math.max(1,Math.floor(c.cv.clientWidth*dpr)),ch=Math.max(1,Math.floor(c.cv.clientHeight*dpr));
+      if(glcv.width!==cw||glcv.height!==ch){glcv.width=cw;glcv.height=ch;}
+      gl.viewport(0,0,cw,ch);
+      gl.uniform2f(A.u.uRes,cw,ch);gl.uniform1f(A.u.uT,t);
+      gl.uniform3fv(A.u.uBase,c.pal.base);gl.uniform3fv(A.u.uLine,c.pal.line);
+      const r=c.cv.getBoundingClientRect();let mh=0,mx=0,my=0;
+      if(MX>=r.left&&MX<=r.right&&MY>=r.top&&MY<=r.bottom&&r.width>0){mh=1;mx=(MX-r.left)/r.width;my=1-(MY-r.top)/r.height;}
+      gl.uniform2f(A.u.uMouse,mx,my);gl.uniform1f(A.u.uMh,mh);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+      if(c.cv.width!==cw||c.cv.height!==ch){c.cv.width=cw;c.cv.height=ch;}
+      c.ctx.drawImage(glcv,0,0);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

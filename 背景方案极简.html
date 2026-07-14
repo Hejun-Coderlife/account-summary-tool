@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>极简背景方案 · 挑一个</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#eef1f7;color:#2a3050;min-height:100vh;padding:22px 22px 40px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:800;letter-spacing:1px;text-align:center;color:#3a4270;}
+  .sub{text-align:center;color:#6b7395;font-size:13px;margin:8px 0 22px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1280px;margin:0 auto;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .tile{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:16/9;cursor:pointer;background:#fdfdff;
+    border:1px solid #e3e7f2;box-shadow:0 10px 26px rgba(60,80,160,.10);
+    transition:transform .18s,box-shadow .18s,border-color .18s;}
+  .tile:hover{transform:translateY(-4px);border-color:#c3ccec;box-shadow:0 18px 42px rgba(60,90,200,.16);}
+  .tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .tile .meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 16px;
+    background:linear-gradient(180deg,transparent,rgba(255,255,255,.90));pointer-events:none;}
+  .tile .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff;
+    background:linear-gradient(135deg,#8aa0d0,#a6b0da);border-radius:6px;padding:2px 9px;margin-bottom:7px;}
+  .tile .name{font-size:16px;font-weight:800;color:#2a3050;}
+  .tile .desc{font-size:12px;color:#5a6288;margin-top:3px;}
+  .tile .expand{position:absolute;top:12px;right:14px;z-index:2;font-size:11px;color:#3a4270;
+    background:rgba(255,255,255,.78);border:1px solid #cbd4ee;border-radius:999px;padding:4px 11px;
+    opacity:0;transition:.18s;pointer-events:none;}
+  .tile:hover .expand{opacity:1;}
+  .tile .err{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;
+    padding:18px;background:#fff;color:#b02a37;font-size:12px;line-height:1.5;text-align:center;white-space:pre-wrap;overflow:auto;}
+  .tile.full{position:fixed;inset:0;z-index:100;aspect-ratio:auto;border-radius:0;border:none;transform:none;margin:0;}
+  .tile.full .expand{opacity:1;font-size:13px;padding:8px 16px;}
+  .hint{text-align:center;color:#8990b5;font-size:12px;margin-top:22px;}
+  .hint b{color:#4a5488;}
+</style>
+</head>
+<body>
+  <h1>极简动态背景 · 4 个方案</h1>
+  <div class="sub">再收一档：更少、更淡、更慢，几乎纯白，只留一点点动静。点任意一个可全屏细看，再点一次（或 Esc）返回。</div>
+  <div class="grid" id="grid"></div>
+  <div class="hint">全部 <b>WebGL / GPU</b> 绘制、极淡留白 · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const SCENES=[
+  {tag:'极 1',name:'微澜等高',desc:'地形线再稀疏，若隐若现'},
+  {tag:'极 2',name:'游丝',desc:'三两条柔波横线，极淡'},
+  {tag:'极 3',name:'浮点',desc:'零星小圆点缓缓漂移'},
+  {tag:'极 4',name:'柔光晕',desc:'一团柔光缓缓游走，近乎纯白'},
+];
+
+function sh(gl,t,src){const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error((t===gl.VERTEX_SHADER?'顶点':'片元')+'着色器编译失败:\n'+gl.getShaderInfoLog(o));return o;}
+function prog(gl,vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl,gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl,gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('着色器链接失败:\n'+gl.getProgramInfoLog(p));return p;}
+function sizer(cv,gl){return function(){const dpr=Math.min(devicePixelRatio||1,1.4);
+  const w=Math.max(1,Math.floor(cv.clientWidth*dpr)),h=Math.max(1,Math.floor(cv.clientHeight*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}gl.viewport(0,0,cv.width,cv.height);};}
+function runFS(cv,fsBody){
+  let gl;try{gl=cv.getContext('webgl',{alpha:false,antialias:false})||cv.getContext('experimental-webgl');}catch(e){}
+  if(!gl)throw new Error('浏览器不支持 WebGL');
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+  const fs='precision mediump float;uniform vec2 uRes;uniform float uT;\n'+fsBody;
+  const pr=prog(gl,vs,fs);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'p'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  const resize=sizer(cv,gl);resize();const t0=performance.now();
+  function loop(now){resize();gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aP);gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.TRIANGLES,0,3);requestAnimationFrame(loop);}
+  requestAnimationFrame(loop);return resize;
+}
+const NOISE=
+  'float hash(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}'+
+  'float noise(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);'+
+  'float a=hash(i),b=hash(i+vec2(1.0,0.0)),c=hash(i+vec2(0.0,1.0)),d=hash(i+vec2(1.0,1.0));'+
+  'return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}'+
+  'float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);'+
+  'for(int i=0;i<5;i++){v+=a*noise(p);p=m*p;a*=0.5;}return v;}';
+
+/* 极1：微澜等高（极稀疏） */
+function initTopo(cv){return runFS(cv, NOISE+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;'+
+  'float h=fbm(uv*1.25+vec2(uT*0.022,uT*0.014));'+
+  'vec3 col=vec3(0.99,0.994,1.0);'+
+  'float e=abs(fract(h*3.0-uT*0.06)-0.5);'+
+  'float line=smoothstep(0.483,0.5,e);'+
+  'col=mix(col,vec3(0.46,0.62,0.72),line*0.22);'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+/* 极2：游丝（三两条柔波横线） */
+function initThread(cv){return runFS(cv,
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;'+
+  'vec3 col=vec3(0.99,0.994,1.0);'+
+  'float wob=0.10*sin(uv.x*1.7+uT*0.40)+0.05*sin(uv.x*3.6-uT*0.24);'+
+  'float e=abs(fract(uv.y*4.0+wob)-0.5);'+
+  'float line=smoothstep(0.486,0.5,e);'+
+  'col=mix(col,vec3(0.50,0.60,0.82),line*0.20);'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+/* 极3：浮点（零星小圆点漂移） */
+function initDots(cv){return runFS(cv,
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;'+
+  'vec3 col=vec3(0.992,0.995,1.0);'+
+  'vec2 g=uv*4.0+vec2(uT*0.03,uT*0.012);'+
+  'vec2 id=floor(g);vec2 f=fract(g)-0.5;'+
+  'float rnd=fract(sin(dot(id,vec2(12.9,78.2)))*43758.5);'+
+  'float show=step(0.72,rnd);'+
+  'float dm=smoothstep(0.07,0.02,length(f))*show;'+
+  'col=mix(col,vec3(0.46,0.58,0.86),dm*0.32);'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+/* 极4：柔光晕（单团柔光游走） */
+function initGlow(cv){return runFS(cv,
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;float ar=uRes.x/uRes.y;'+
+  'vec2 c1=vec2(ar*0.5+0.35*sin(uT*0.14),0.5+0.20*cos(uT*0.10));'+
+  'vec2 c2=vec2(ar*0.5-0.30*sin(uT*0.09),0.5-0.18*cos(uT*0.12));'+
+  'vec3 col=vec3(0.986,0.99,1.0);'+
+  'col=mix(col,vec3(0.80,0.87,1.0),smoothstep(0.85,0.0,length(uv-c1))*0.45);'+
+  'col=mix(col,vec3(0.90,0.86,0.99),smoothstep(0.70,0.0,length(uv-c2))*0.28);'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+const INITS=[initTopo,initThread,initDots,initGlow];
+const grid=document.getElementById('grid');const resizers=[];
+SCENES.forEach((s,idx)=>{
+  const tile=document.createElement('div');tile.className='tile';
+  tile.innerHTML='<canvas></canvas><div class="expand">⤢ 全屏预览</div>'+
+    '<div class="meta"><span class="tag">'+s.tag+'</span><div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div></div>';
+  grid.appendChild(tile);
+  const cv=tile.querySelector('canvas');
+  tile.addEventListener('click',()=>{
+    const wasFull=tile.classList.contains('full');
+    document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));
+    if(!wasFull)tile.classList.add('full');
+    requestAnimationFrame(()=>resizers.forEach(fn=>fn()));
+  });
+  try{const r=INITS[idx](cv);if(typeof r==='function')resizers.push(r);}
+  catch(err){const d=document.createElement('div');d.className='err';
+    d.textContent='方案'+(idx+1)+' 渲染失败：\n'+((err&&err.message)||err);tile.appendChild(d);console.error('scene',idx+1,err);}
+});
+addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));requestAnimationFrame(()=>resizers.forEach(fn=>fn()));}});
+addEventListener('resize',()=>resizers.forEach(fn=>fn()));
+</script>
+</body>
+</html>

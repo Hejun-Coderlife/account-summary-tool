@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>表头配色 · 浅色系 极光/星点 各10色</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0b0f1c;color:#dbe6f5;min-height:100vh;padding:24px 22px 48px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:800;letter-spacing:1px;text-align:center;color:#cfe0ff;}
+  .sub{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 22px;}
+  h2{max-width:1100px;margin:26px auto 12px;font-size:15px;color:#bcd0f5;letter-spacing:1px;
+    padding-bottom:8px;border-bottom:1px solid #1e2947;}
+  .list{display:flex;flex-direction:column;gap:12px;max-width:1100px;margin:0 auto;}
+  .card{border-radius:12px;overflow:hidden;border:1px solid #1e2947;background:#0a0e1c;box-shadow:0 8px 20px rgba(0,0,0,.4);}
+  .bar{position:relative;overflow:hidden;height:66px;background:#eef1f7;}
+  .bar canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .bar .fg{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;gap:12px;pointer-events:none;}
+  .bar .fg svg{width:28px;height:28px;flex:none;filter:drop-shadow(0 1px 3px rgba(60,80,160,.3));}
+  .bar .fg span{font-size:18px;font-weight:700;letter-spacing:1px;color:#1f2540;text-shadow:0 1px 6px rgba(255,255,255,.5);}
+  .label{padding:8px 16px;font-size:13px;}
+  .label .n{font-weight:700;color:#e7f0ff;}
+  .err{max-width:1100px;margin:0 auto;color:#ff6b7a;font-size:13px;text-align:center;padding:10px;}
+  .hint{text-align:center;color:#66799b;font-size:12px;margin-top:26px;}
+  .hint b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <h1>表头配色 · 浅色系 · 极光 &amp; 星点 各 10 色</h1>
+  <div class="sub">浅底柔彩，标题/图标已改深色更清楚。选好告诉我「要极光·浅X」或「要星点·浅X」。</div>
+  <h2>Ⓐ 流彩极光（浅） · 10 色</h2>
+  <div class="list" id="listA"></div>
+  <h2>Ⓑ 星点闪烁（浅） · 10 色</h2>
+  <div class="list" id="listB"></div>
+  <div class="hint">整页仅用 <b>1 个 WebGL 上下文</b> · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const LOGO='<svg viewBox="0 0 36 36" fill="none"><defs><linearGradient id="lgd" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#38bdf8"/><stop offset=".55" stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs><rect x="4" y="21" width="6.5" height="11" rx="2.2" fill="url(#lgd)"/><rect x="14.75" y="12" width="6.5" height="20" rx="2.2" fill="url(#lgd)"/><rect x="25.5" y="5" width="6.5" height="27" rx="2.2" fill="url(#lgd)"/><path d="M7.25 16 L18 7.5 L28.75 3" stroke="#6d28d9" stroke-width="1.4" stroke-linecap="round" opacity=".7"/></svg>';
+
+// 10 套浅色：底A(近白) 底B(浅) 主色/副色(粉彩) 星色(中调，浅底上看得见)
+const PALETTES=[
+  {name:'浅1 天蓝', a:[0.97,0.98,1.0], b:[0.90,0.94,1.0], acc1:[0.62,0.80,1.0], acc2:[0.78,0.90,1.0], star:[0.35,0.58,0.95]},
+  {name:'浅2 薄荷', a:[0.96,1.0,0.98], b:[0.88,0.98,0.93], acc1:[0.55,0.90,0.78], acc2:[0.72,0.96,0.86], star:[0.18,0.66,0.54]},
+  {name:'浅3 薰衣草', a:[0.98,0.97,1.0], b:[0.93,0.90,1.0], acc1:[0.76,0.70,1.0], acc2:[0.86,0.82,1.0], star:[0.52,0.44,0.90]},
+  {name:'浅4 蜜桃', a:[1.0,0.98,0.96], b:[1.0,0.93,0.88], acc1:[1.0,0.78,0.62], acc2:[1.0,0.87,0.74], star:[0.95,0.52,0.32]},
+  {name:'浅5 樱粉', a:[1.0,0.97,0.99], b:[1.0,0.90,0.95], acc1:[1.0,0.72,0.85], acc2:[1.0,0.84,0.91], star:[0.95,0.40,0.66]},
+  {name:'浅6 柠檬', a:[1.0,1.0,0.95], b:[1.0,0.98,0.85], acc1:[1.0,0.88,0.52], acc2:[1.0,0.94,0.70], star:[0.82,0.62,0.15]},
+  {name:'浅7 青瓷', a:[0.96,0.99,1.0], b:[0.86,0.96,0.99], acc1:[0.50,0.85,0.95], acc2:[0.68,0.92,0.98], star:[0.14,0.60,0.78]},
+  {name:'浅8 珊瑚', a:[1.0,0.97,0.95], b:[1.0,0.91,0.88], acc1:[1.0,0.66,0.58], acc2:[1.0,0.80,0.72], star:[0.92,0.38,0.36]},
+  {name:'浅9 灰蓝', a:[0.97,0.98,1.0], b:[0.90,0.92,0.97], acc1:[0.60,0.70,0.90], acc2:[0.76,0.84,0.96], star:[0.36,0.46,0.68]},
+  {name:'浅10 淡金', a:[1.0,0.99,0.95], b:[0.99,0.95,0.86], acc1:[0.95,0.80,0.48], acc2:[1.0,0.90,0.66], star:[0.78,0.58,0.22]},
+];
+
+const glcv=document.createElement('canvas');
+let gl=null;try{gl=glcv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true});}catch(e){}
+
+const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+const AURORA='precision mediump float;uniform vec2 uRes;uniform float uT;uniform vec3 uA,uB,uAcc1,uAcc2;uniform vec2 uMouse;uniform float uMh;'+
+  'float hn(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}'+
+  'float nz(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);'+
+  'float a=hn(i),b=hn(i+vec2(1.0,0.0)),c=hn(i+vec2(0.0,1.0)),d=hn(i+vec2(1.0,1.0));'+
+  'return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}'+
+  'float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<4;i++){v+=a*nz(p);p=m*p;a*=0.5;}return v;}'+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec3 col=mix(uA,uB,uv.x);'+
+  'float t=uT*0.08;vec2 P=uv*vec2(ar,1.0);'+
+  'vec2 mp=vec2(uMouse.x*ar,uMouse.y);vec2 dir=P-mp;float md=length(dir);'+
+  'float infl=exp(-md*md*7.0)*uMh;'+
+  'P+=normalize(dir+vec2(0.0001))*infl*0.35;'+
+  'vec2 q=vec2(fbm(P*2.0+vec2(0.0,t)),fbm(P*2.0+vec2(3.0,-t)));float f=fbm(P*3.0+q*1.5+t);'+
+  'f+=infl*0.4;'+
+  'col=mix(col,uAcc1,smoothstep(0.15,1.0,f)*0.7);col=mix(col,uAcc2,smoothstep(0.55,1.1,f)*0.5);'+
+  'col=mix(col,uAcc1,exp(-md*md*16.0)*uMh*0.35);'+
+  'gl_FragColor=vec4(col,1.0);}';
+// 浅底星点：用 mix 把点染成颜色（相加会被白底吃掉）
+const STAR='precision mediump float;uniform vec2 uRes;uniform float uT;uniform vec3 uA,uB,uStar;'+
+  'float h2(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5453);}'+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec3 col=mix(uA,uB,uv.x);'+
+  'vec2 g=vec2(uv.x*ar,uv.y)*14.0;vec2 id=floor(g);vec2 f=fract(g)-0.5;'+
+  'float r=h2(id);float tw=0.45+0.55*sin(uT*2.0+r*30.0);'+
+  'float star=smoothstep(0.15,0.0,length(f))*step(0.60,r)*clamp(tw,0.0,1.0);'+
+  'col=mix(col,uStar,star*0.7);'+
+  'gl_FragColor=vec4(col,1.0);}';
+
+function mkProg(fsrc,uniforms){
+  function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fsrc));
+  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={};uniforms.forEach(n=>u[n]=gl.getUniformLocation(p,n));u.aP=gl.getAttribLocation(p,'p');return {p,u};
+}
+
+const CARDS=[];
+function build(listId,kind,prefix){
+  const list=document.getElementById(listId);
+  PALETTES.forEach(pal=>{
+    const card=document.createElement('div');card.className='card';
+    card.innerHTML='<div class="bar"><canvas></canvas><div class="fg">'+LOGO+'<span>客户账目汇总工具</span></div></div>'+
+      '<div class="label"><span class="n">'+prefix+' · '+pal.name+'</span></div>';
+    list.appendChild(card);
+    const cv=card.querySelector('canvas');
+    CARDS.push({cv,ctx:cv.getContext('2d'),kind,pal,vis:true});
+  });
+}
+build('listA','aurora','极光·浅');
+build('listB','star','星点·浅');
+
+if(!gl){const d=document.createElement('div');d.className='err';d.textContent='当前浏览器/设备不支持 WebGL，无法预览。';document.body.appendChild(d);}
+else{
+  let A,S,buf,ok=true;
+  try{A=mkProg(AURORA,['uRes','uT','uA','uB','uAcc1','uAcc2','uMouse','uMh']);S=mkProg(STAR,['uRes','uT','uA','uB','uStar']);
+    buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  }catch(err){ok=false;const d=document.createElement('div');d.className='err';d.textContent='着色器错误：'+err.message;document.body.appendChild(d);}
+
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const c=CARDS.find(x=>x.cv.parentNode===e.target);if(c)c.vis=e.isIntersecting;}),{rootMargin:'80px'});
+  CARDS.forEach(c=>io.observe(c.cv.parentNode));
+
+  let MX=-1,MY=-1;
+  addEventListener('mousemove',e=>{MX=e.clientX;MY=e.clientY;});
+  addEventListener('mouseout',e=>{if(!e.relatedTarget){MX=-1;MY=-1;}});
+
+  const t0=performance.now();
+  function frame(now){
+    if(!ok)return;
+    const t=(now-t0)/1000,dpr=Math.min(devicePixelRatio||1,1.5);
+    for(const c of CARDS){
+      if(!c.vis)continue;
+      const cw=Math.max(1,Math.floor(c.cv.clientWidth*dpr)),ch=Math.max(1,Math.floor(c.cv.clientHeight*dpr));
+      if(glcv.width!==cw||glcv.height!==ch){glcv.width=cw;glcv.height=ch;}
+      gl.viewport(0,0,cw,ch);
+      const P=c.kind==='aurora'?A:S;gl.useProgram(P.p);
+      gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(P.u.aP);gl.vertexAttribPointer(P.u.aP,2,gl.FLOAT,false,0,0);
+      gl.uniform2f(P.u.uRes,cw,ch);gl.uniform1f(P.u.uT,t);
+      gl.uniform3fv(P.u.uA,c.pal.a);gl.uniform3fv(P.u.uB,c.pal.b);
+      if(c.kind==='aurora'){gl.uniform3fv(P.u.uAcc1,c.pal.acc1);gl.uniform3fv(P.u.uAcc2,c.pal.acc2);
+        const r=c.cv.getBoundingClientRect();let mh=0,mx=0,my=0;
+        if(MX>=r.left&&MX<=r.right&&MY>=r.top&&MY<=r.bottom&&r.width>0){mh=1;mx=(MX-r.left)/r.width;my=1-(MY-r.top)/r.height;}
+        gl.uniform2f(P.u.uMouse,mx,my);gl.uniform1f(P.u.uMh,mh);}
+      else gl.uniform3fv(P.u.uStar,c.pal.star);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+      if(c.cv.width!==cw||c.cv.height!==ch){c.cv.width=cw;c.cv.height=ch;}
+      c.ctx.drawImage(glcv,0,0);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

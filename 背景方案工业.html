@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工业科技背景 · 挑一个</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0b0f18;color:#dbe6f5;min-height:100vh;padding:22px 22px 40px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:20px;font-weight:800;letter-spacing:2px;text-align:center;color:#cfe4ff;}
+  .sub{text-align:center;color:#7f93b5;font-size:13px;margin:8px 0 22px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1280px;margin:0 auto;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .tile{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:16/9;cursor:pointer;background:#070b12;
+    border:1px solid #1b2740;box-shadow:0 14px 34px rgba(0,0,0,.5);
+    transition:transform .18s,box-shadow .18s,border-color .18s;}
+  .tile:hover{transform:translateY(-4px);border-color:#2f8fd0;box-shadow:0 22px 50px rgba(20,120,200,.3);}
+  .tile canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .tile .meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 16px;
+    background:linear-gradient(180deg,transparent,rgba(4,8,16,.86));pointer-events:none;}
+  .tile .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#04121c;
+    background:linear-gradient(135deg,#3fe0ff,#4a9bff);border-radius:5px;padding:2px 9px;margin-bottom:7px;}
+  .tile .name{font-size:16px;font-weight:800;color:#e7f2ff;letter-spacing:.5px;}
+  .tile .desc{font-size:12px;color:#93a8c8;margin-top:3px;}
+  .tile .expand{position:absolute;top:12px;right:14px;z-index:2;font-size:11px;color:#bfe0ff;
+    background:rgba(8,16,30,.6);border:1px solid #294a6e;border-radius:999px;padding:4px 11px;
+    opacity:0;transition:.18s;pointer-events:none;}
+  .tile:hover .expand{opacity:1;}
+  .tile .err{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;
+    padding:18px;background:#0a0f18;color:#ff6b7a;font-size:12px;line-height:1.5;text-align:center;white-space:pre-wrap;overflow:auto;}
+  .tile.full{position:fixed;inset:0;z-index:100;aspect-ratio:auto;border-radius:0;border:none;transform:none;margin:0;}
+  .tile.full .expand{opacity:1;font-size:13px;padding:8px 16px;}
+  .hint{text-align:center;color:#66799b;font-size:12px;margin-top:22px;}
+  .hint b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <h1>工业科技动态背景 · 4 个方案</h1>
+  <div class="sub">深色冷光工业风。点任意一个可全屏细看，再点一次（或 Esc）返回。选好告诉我「要工几」。</div>
+  <div class="grid" id="grid"></div>
+  <div class="hint">全部 <b>WebGL / GPU</b> 手写着色器 · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const SCENES=[
+  {tag:'工 1',name:'蓝图网格',desc:'工程蓝图细网格 + 主次线 + 扫描光带'},
+  {tag:'工 2',name:'电路脉冲',desc:'电路板走线，数据光点沿线流动'},
+  {tag:'工 3',name:'雷达扫描',desc:'HUD 雷达环 + 旋转扫描 + 十字准星'},
+  {tag:'工 4',name:'立体栅格',desc:'透视地格向前推进，纵深感强'},
+];
+
+function sh(gl,t,src){const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error((t===gl.VERTEX_SHADER?'顶点':'片元')+'着色器编译失败:\n'+gl.getShaderInfoLog(o));return o;}
+function prog(gl,vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl,gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl,gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error('着色器链接失败:\n'+gl.getProgramInfoLog(p));return p;}
+function sizer(cv,gl){return function(){const dpr=Math.min(devicePixelRatio||1,1.4);
+  const w=Math.max(1,Math.floor(cv.clientWidth*dpr)),h=Math.max(1,Math.floor(cv.clientHeight*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}gl.viewport(0,0,cv.width,cv.height);};}
+function runFS(cv,fsBody){
+  let gl;try{gl=cv.getContext('webgl',{alpha:false,antialias:false})||cv.getContext('experimental-webgl');}catch(e){}
+  if(!gl)throw new Error('浏览器不支持 WebGL');
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+  const fs='precision mediump float;uniform vec2 uRes;uniform float uT;\n'+fsBody;
+  const pr=prog(gl,vs,fs);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const aP=gl.getAttribLocation(pr,'p'),uRes=gl.getUniformLocation(pr,'uRes'),uT=gl.getUniformLocation(pr,'uT');
+  const resize=sizer(cv,gl);resize();const t0=performance.now();
+  function loop(now){resize();gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aP);gl.vertexAttribPointer(aP,2,gl.FLOAT,false,0,0);
+    gl.uniform2f(uRes,cv.width,cv.height);gl.uniform1f(uT,(now-t0)/1000);
+    gl.drawArrays(gl.TRIANGLES,0,3);requestAnimationFrame(loop);}
+  requestAnimationFrame(loop);return resize;
+}
+
+/* 工1：蓝图网格 */
+function initBlueprint(cv){return runFS(cv,
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;'+
+  'vec3 col=vec3(0.035,0.065,0.11);'+
+  'vec2 g=uv*22.0;g.x+=uT*0.25;'+
+  'vec2 e=abs(fract(g)-0.5);'+
+  'float minor=smoothstep(0.5,0.47,max(e.x,e.y));'+
+  'col+=vec3(0.10,0.34,0.52)*minor*0.22;'+
+  'vec2 g2=uv*4.4;g2.x+=uT*0.05;'+
+  'vec2 e2=abs(fract(g2)-0.5);'+
+  'float major=smoothstep(0.5,0.48,max(e2.x,e2.y));'+
+  'col+=vec3(0.16,0.52,0.80)*major*0.5;'+
+  'float inter=smoothstep(0.47,0.5,min(e2.x,e2.y));'+
+  'col+=vec3(0.35,0.75,1.0)*inter*0.45;'+
+  'float sx=fract(uT*0.09);float uvx=gl_FragCoord.x/uRes.x;'+
+  'float scan=smoothstep(0.05,0.0,abs(uvx-sx));'+
+  'col+=vec3(0.15,0.55,0.85)*scan*0.5;'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+/* 工2：电路脉冲 */
+function initCircuit(cv){return runFS(cv,
+  'float hash(float n){return fract(sin(n)*43758.5453);}'+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes.y*8.0;'+
+  'vec3 col=vec3(0.03,0.055,0.075);'+
+  'vec2 f=abs(fract(uv)-0.5);'+
+  'float lines=smoothstep(0.5,0.46,max(f.x,f.y));'+
+  'col+=vec3(0.06,0.22,0.28)*lines*0.6;'+
+  'float node=smoothstep(0.14,0.0,length(fract(uv)-0.5));'+
+  'col+=vec3(0.10,0.35,0.45)*node*0.5;'+
+  'float onH=smoothstep(0.5,0.46,f.y);'+
+  'float hx=fract(uv.x-uT*1.3+hash(floor(uv.y))*10.0);'+
+  'float pulseH=smoothstep(0.09,0.0,hx)*onH;'+
+  'float onV=smoothstep(0.5,0.46,f.x);'+
+  'float vy=fract(uv.y-uT*1.1+hash(floor(uv.x)+7.0)*10.0);'+
+  'float pulseV=smoothstep(0.09,0.0,vy)*onV;'+
+  'col+=vec3(0.25,0.95,1.0)*(pulseH+pulseV);'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+/* 工3：雷达扫描 */
+function initRadar(cv){return runFS(cv,
+  'void main(){vec2 uv=(gl_FragCoord.xy-0.5*uRes)/uRes.y;'+
+  'vec3 col=vec3(0.02,0.05,0.05);'+
+  'float r=length(uv);float ang=atan(uv.y,uv.x);'+
+  'float ring=smoothstep(0.5,0.42,abs(fract(r*7.0)-0.5));'+
+  'col+=vec3(0.0,0.42,0.36)*ring*0.35;'+
+  'float spokes=smoothstep(0.5,0.44,abs(fract(ang/6.2832*12.0)-0.5));'+
+  'col+=vec3(0.0,0.36,0.30)*spokes*0.18;'+
+  'float sweepAng=mod(uT*1.2,6.2832);'+
+  'float da=mod(sweepAng-ang,6.2832);'+
+  'float sweep=smoothstep(1.4,0.0,da);'+
+  'col+=vec3(0.1,0.95,0.6)*sweep*0.5*smoothstep(1.25,0.0,r);'+
+  'float reticle=smoothstep(0.004,0.0,abs(uv.x))+smoothstep(0.004,0.0,abs(uv.y));'+
+  'col+=vec3(0.1,0.6,0.5)*reticle*0.4*smoothstep(1.2,0.0,r);'+
+  'col*=smoothstep(1.35,0.12,r)+0.08;'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+/* 工4：立体栅格（Tron 透视） */
+function initFloor(cv){return runFS(cv,
+  'void main(){vec2 uv=(gl_FragCoord.xy-0.5*uRes)/uRes.y;'+
+  'vec3 col=vec3(0.02,0.035,0.07);'+
+  'if(uv.y<0.0){float persp=0.45/(-uv.y+0.002);'+
+  'float gx=uv.x*persp*2.0;float gz=persp*2.0-uT*1.4;'+
+  'float fx=abs(fract(gx)-0.5),fz=abs(fract(gz)-0.5);'+
+  'float line=smoothstep(0.06,0.0,min(fx,fz));'+
+  'col+=vec3(0.14,0.80,1.0)*line*smoothstep(0.0,0.5,-uv.y)*1.2;}'+
+  'col+=vec3(0.05,0.45,0.75)*smoothstep(0.12,0.0,abs(uv.y))*0.55;'+
+  'gl_FragColor=vec4(col,1.0);}');}
+
+const INITS=[initBlueprint,initCircuit,initRadar,initFloor];
+const grid=document.getElementById('grid');const resizers=[];
+SCENES.forEach((s,idx)=>{
+  const tile=document.createElement('div');tile.className='tile';
+  tile.innerHTML='<canvas></canvas><div class="expand">⤢ 全屏预览</div>'+
+    '<div class="meta"><span class="tag">'+s.tag+'</span><div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div></div>';
+  grid.appendChild(tile);
+  const cv=tile.querySelector('canvas');
+  tile.addEventListener('click',()=>{
+    const wasFull=tile.classList.contains('full');
+    document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));
+    if(!wasFull)tile.classList.add('full');
+    requestAnimationFrame(()=>resizers.forEach(fn=>fn()));
+  });
+  try{const r=INITS[idx](cv);if(typeof r==='function')resizers.push(r);}
+  catch(err){const d=document.createElement('div');d.className='err';
+    d.textContent='方案'+(idx+1)+' 渲染失败：\n'+((err&&err.message)||err);tile.appendChild(d);console.error('scene',idx+1,err);}
+});
+addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.tile.full').forEach(t=>t.classList.remove('full'));requestAnimationFrame(()=>resizers.forEach(fn=>fn()));}});
+addEventListener('resize',()=>resizers.forEach(fn=>fn()));
+</script>
+</body>
+</html>
