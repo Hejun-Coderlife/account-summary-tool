@@ -449,8 +449,8 @@ function custDetail(c){
 window.toggleRemark=v=>{showRemark=v;renderPanel();};
 
 /* ============ Excel 导出 ============ */
-const HEADER_STYLE={fill:{patternType:'solid',fgColor:{rgb:'2563EB'}},font:{color:{rgb:'FFFFFF'},bold:true,sz:12},
-  alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'thin',color:{rgb:'1E40AF'}}}};
+const HEADER_STYLE={fill:{patternType:'solid',fgColor:{rgb:'D9D9D9'}},font:{color:{rgb:'333333'},bold:true,sz:12},
+  alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'thin',color:{rgb:'A6A6A6'}}}};
 function buildSheet(aoa,colW,headerRowIdx,moneyCols){
   const ws=XLSX.utils.aoa_to_sheet(aoa);if(colW)ws['!cols']=colW.map(w=>({wch:w}));
   const H=headerRowIdx,ncol=(aoa[H]||[]).length;
@@ -488,6 +488,8 @@ function styleSheet(ws,colW,moneyCols,titleRows){
   titleRows.forEach((r,idx)=>{const a=XLSX.utils.encode_cell({r,c:0});
     if(ws[a])ws[a].s=idx===0?{font:{bold:true,sz:15},alignment:{horizontal:'center',vertical:'center'}}
       :{font:{sz:11,color:{rgb:'6B7280'}},alignment:{horizontal:'center',vertical:'center'}};});
+  const hr=Math.max.apply(null,titleRows)+2;   // 列头行（标题+副标题+空行之后）灰底
+  for(let c=0;c<colW.length;c++){const cell=ws[XLSX.utils.encode_cell({r:hr,c})];if(cell)cell.s=HEADER_STYLE;}
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++)for(const C of moneyCols){const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];if(cell&&cell.t==='n')cell.z='"¥"#,##0.00';}
   return ws;}
@@ -596,8 +598,8 @@ updateGenState();
   function meridian(phi,seg){const base=wpos.length/3;
     for(let i=0;i<=seg;i++){const t=-Math.PI/2+i/seg*Math.PI,y=Math.sin(t),r=Math.cos(t);wpos.push(Math.cos(phi)*r,y,Math.sin(phi)*r);}
     for(let i=0;i<seg;i++){widx.push(base+i,base+i+1);}}
-  const LAT=6;for(let k=1;k<LAT;k++)ring(-Math.PI/2+k/LAT*Math.PI,64);
-  const MER=12;for(let m=0;m<MER;m++)meridian(m/MER*2*Math.PI,48);
+  const LAT=7;for(let k=1;k<LAT;k++)ring(-Math.PI/2+k/LAT*Math.PI,96);
+  const MER=12;for(let m=0;m<MER;m++)meridian(m/MER*2*Math.PI,64);
   const CP=110,GA=Math.PI*(3-Math.sqrt(5)),ppos=[];
   for(let i=0;i<CP;i++){const y=1-(i/(CP-1))*2,r=Math.sqrt(Math.max(0,1-y*y)),th=i*GA;ppos.push(Math.cos(th)*r*1.005,y*1.005,Math.sin(th)*r*1.005);}
   const spos=[];const ORB=[{r:1.5,inc:0.35,n:6},{r:1.78,inc:-0.55,n:5},{r:1.65,inc:0.95,n:5}];
@@ -606,12 +608,12 @@ updateGenState();
   const vs=`attribute vec3 pos;uniform mat4 uMVP;uniform float uPS;varying float vz;
     void main(){vec4 p=uMVP*vec4(pos,1.0);gl_Position=p;vz=p.z/p.w;gl_PointSize=uPS/p.w;}`;
   const fs=`precision mediump float;uniform float uMode;uniform float uKind;varying float vz;
-    void main(){float b=clamp(0.62-vz*0.42,0.16,1.0);
-      if(uMode>0.5){gl_FragColor=vec4(0.42,0.56,0.98,0.16*b);}
-      else{vec2 d=gl_PointCoord-vec2(0.5);float r=dot(d,d);if(r>0.25)discard;
-        float a=smoothstep(0.25,0.0,r);
-        vec3 c=uKind>0.5?vec3(0.5,0.98,1.0):mix(vec3(0.55,0.62,1.0),vec3(0.72,0.92,1.0),b);
-        gl_FragColor=vec4(c,a*(0.55+0.45*b));}}`;
+    void main(){float b=clamp(0.65-vz*0.4,0.26,1.0);
+      vec2 d=gl_PointCoord-vec2(0.5);float r=dot(d,d);if(r>0.25)discard;
+      float a=smoothstep(0.25,0.0,r);
+      if(uKind>1.5){gl_FragColor=vec4(0.42,0.55,0.9,a*(0.42+0.35*b));}      // 经纬网格点
+      else if(uKind>0.5){gl_FragColor=vec4(0.55,1.0,1.0,a*(0.85+0.15*b));} // 卫星
+      else{vec3 c=mix(vec3(0.66,0.76,1.0),vec3(0.85,0.97,1.0),b);gl_FragColor=vec4(c,a*(0.85+0.15*b));}}`;
   function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
     if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.warn('globe shader:',gl.getShaderInfoLog(o));return o;}
   const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));
@@ -626,7 +628,7 @@ updateGenState();
   const DPR=Math.min(devicePixelRatio||1,1.75);let W,H;
   function resize(){W=cv.width=Math.floor(innerWidth*DPR);H=cv.height=Math.floor(innerHeight*DPR);gl.viewport(0,0,W,H);}
   resize();addEventListener('resize',resize);
-  let dragY=0.5,tilt=-0.32,autoG=0,autoS=0,zoom=3.5,drag=false,lx=0,ly=0;
+  let dragY=0.5,tilt=-0.32,autoG=0,autoS=0,zoom=3.1,drag=false,lx=0,ly=0;
   cv.style.pointerEvents='auto';
   cv.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;try{cv.setPointerCapture(e.pointerId);}catch(_){}});
   cv.addEventListener('pointermove',e=>{if(!drag)return;dragY+=(e.clientX-lx)*0.006;tilt+=(e.clientY-ly)*0.006;tilt=Math.max(-1.4,Math.min(1.4,tilt));lx=e.clientX;ly=e.clientY;});
@@ -644,16 +646,16 @@ updateGenState();
     else gl.drawArrays(gl.POINTS,0,count);}
   function frame(){
     if(!drag)autoG+=0.0011; autoS+=0.006;
-    const view=ident();view[13]=-0.6;view[14]=-zoom;
+    const view=ident();view[13]=-0.35;view[14]=-zoom;
     const proj=persp(0.95,W/H,0.1,100);
     const mvpG=mul(proj,mul(view,mul(rY(dragY+autoG),rX(tilt))));
     const mvpS=mul(proj,mul(view,mul(rY(dragY+autoS),rX(tilt))));
     gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(pr);
     gl.uniformMatrix4fv(uMVP,false,mvpG);
-    draw(wB,1.0,0.0,1.0,widx.length,true);
-    draw(pB,0.0,0.0,H*0.011,CP,false);
+    draw(wB,0.0,2.0,H*0.005,wpos.length/3,false);   // 经纬网格点（密集小点组成线）
+    draw(pB,0.0,0.0,H*0.014,CP,false);               // 客户光点
     gl.uniformMatrix4fv(uMVP,false,mvpS);
-    draw(sB,0.0,1.0,H*0.018,spos.length/3,false);
+    draw(sB,0.0,1.0,H*0.022,spos.length/3,false);    // 轨道卫星
     requestAnimationFrame(frame);}
   requestAnimationFrame(frame);
 })();
