@@ -280,9 +280,33 @@ function extractRows(entry){
   return out;}
 
 /* ============ 上传 ============ */
+/* ============ 模板校验：表头必须与模板一致 ============ */
+const TEMPLATES={
+  income:['序号','年份','月份','日','客户名称','金额(元)','备注'],
+  expense:['序号','年份','月份','日','单位名称','金额(元)','备注'],
+  master:['序号','客户名称（标准）'],
+};
+const CATNAME={income:'进账·收入',expense:'开票金额',master:'客户名汇总'};
+function normH(s){return String(s==null?'':s).replace(/[\s　]/g,'').replace(/（/g,'(').replace(/）/g,')');}
+function headerRowOf(aoa){for(let r=0;r<Math.min(aoa.length,12);r++){const row=aoa[r]||[];
+  if(row.filter(c=>String(c).trim()!=='').length>=2)return row;}return [];}
+function trimTail(a){a=a.slice();while(a.length&&String(a[a.length-1]).trim()==='')a.pop();return a;}
+function validateFile(wb,cat){
+  const exp=TEMPLATES[cat],expN=exp.map(normH);let firstFound=null;
+  for(const sn of wb.SheetNames){
+    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
+    const got=trimTail(headerRowOf(aoa)).map(c=>String(c==null?'':c).trim());
+    if(firstFound===null)firstFound=got;
+    const gotN=got.map(normH);
+    if(gotN.length===expN.length&&expN.every((h,i)=>h===gotN[i]))return {ok:true};
+  }
+  const found=(firstFound&&firstFound.length)?firstFound.join(' | '):'（未找到表头/为空）';
+  return {ok:false,msg:`「${CATNAME[cat]}」表格格式不符，已拒绝上传。\n\n需要的表头（第一行）应为：\n${exp.join(' | ')}\n\n你的文件表头是：\n${found}\n\n请点该卡片的「下载模版」，按模板的表头填写后再上传。`};
+}
 function handleFiles(fileList,category){
   Array.from(fileList).forEach(file=>{const reader=new FileReader();
     reader.onload=e=>{let wb;try{wb=XLSX.read(e.target.result,{type:'array',cellDates:true});}catch(err){alert('无法读取文件：'+file.name+'\n'+err);return;}
+      const v=validateFile(wb,category);if(!v.ok){alert(v.msg);return;}
       const picked=pickBestSheet(wb);
       const entry={id:'f'+Math.random().toString(36).slice(2,9),name:file.name,category,wb,
         selectedSheet:picked?picked.name:wb.SheetNames[0],analysis:picked?picked.analysis:null};
@@ -324,6 +348,7 @@ function parseMaster(wb){
   return std;}
 function handleMaster(file){const reader=new FileReader();
   reader.onload=e=>{let wb;try{wb=XLSX.read(e.target.result,{type:'array'});}catch(err){alert('无法读取：'+err);return;}
+    const mv=validateFile(wb,'master');if(!mv.ok){alert(mv.msg);return;}
     const std=parseMaster(wb);if(std.size===0){alert('未能识别客户名清单，请使用「下载模版」的格式。');return;}
     store.master={fileName:file.name,std};renderMaster();if(result)generate();};
   reader.readAsArrayBuffer(file);}
