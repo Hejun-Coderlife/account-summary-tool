@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三套主题 · 首页样板对比</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0a0d18;color:#dbe6f5;-webkit-font-smoothing:antialiased;padding:22px 18px 60px;}
+  .pgh{text-align:center;font-size:19px;font-weight:800;letter-spacing:1px;color:#cfe0ff;}
+  .pgs{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 26px;}
+  .mock{max-width:1000px;margin:0 auto 40px;border-radius:20px;overflow:hidden;position:relative;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06);}
+  .mtag{display:inline-block;margin:0 auto 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#0a0d18;
+    background:linear-gradient(135deg,#8fd8ff,#c6a6ff);border-radius:999px;padding:4px 14px;}
+  .mrow{max-width:1000px;margin:0 auto;text-align:center;}
+  /* 表头 */
+  .mhead{position:relative;overflow:hidden;height:104px;display:flex;align-items:center;justify-content:center;background:var(--headfb);}
+  .mhead canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .mhead .brand{position:relative;z-index:2;display:inline-flex;align-items:center;gap:14px;}
+  .mhead .logo{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 8px rgba(80,110,220,.5));}
+  .gear{transform-box:fill-box;transform-origin:center;}
+  .gspin{animation:gspin 9s linear infinite;} .gspinr{animation:gspin 6s linear infinite reverse;}
+  @keyframes gspin{to{transform:rotate(360deg);}}
+  .ttl{text-align:left;line-height:1;}
+  .ttl h1{margin:0;font-size:27px;font-weight:800;letter-spacing:2px;background:var(--titleGrad);
+    -webkit-background-clip:text;background-clip:text;color:transparent;filter:var(--titleGlow);}
+  .tsub{font-size:10px;letter-spacing:4px;color:var(--muted);margin-top:6px;font-weight:700;}
+  /* 主体 */
+  .mbody{position:relative;padding:30px 30px 34px;background:var(--bodyfb);overflow:hidden;}
+  .mbody canvas.mbg{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
+  .mcard{position:relative;z-index:1;border-radius:16px;padding:22px 24px;
+    background:var(--cardbg);border:1px solid var(--cardborder);box-shadow:var(--cardshadow);color:var(--txt);}
+  .mcard h2{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;margin:0 0 3px;color:var(--txt);}
+  .step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--btnGrad);color:#fff;
+    font-size:12px;align-items:center;justify-content:center;font-weight:700;}
+  .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+  .drow{display:grid;grid-template-columns:1fr 1fr 0.72fr;gap:15px;}
+  .drop{border:1.5px solid var(--tileBorder);border-radius:13px;padding:20px 16px;text-align:center;background:var(--tileBg);transition:.15s;}
+  .drop:hover{border-color:var(--hover);transform:translateY(-2px);}
+  .dtag{display:inline-block;font-size:12px;font-weight:700;padding:2px 11px;border-radius:999px;margin-bottom:9px;}
+  .di{width:30px;height:30px;display:block;margin:2px auto 9px;}
+  .dact{font-size:13.5px;font-weight:600;color:var(--txt);}
+  .tpl{display:inline-block;margin-top:10px;font-size:12px;padding:4px 12px;border-radius:7px;
+    border:1px solid var(--tplBorder);color:var(--tplFg);background:var(--tplBg);}
+  .mfoot{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--tileBorder);}
+  .genbtn{border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:700;color:#fff;
+    background:var(--btnGrad);box-shadow:var(--btnShadow);cursor:pointer;}
+  .note{color:var(--muted);font-size:12px;margin-top:11px;}
+  .pgend{text-align:center;color:#66799b;font-size:12px;margin-top:10px;}
+  .pgend b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <div class="pgh">三套主题 · 首页样板对比</div>
+  <div class="pgs">整套色板(背景/表头/卡片/标签/按钮/标题)都成体系。选好告诉我「用主题X」，我就套到真站上。</div>
+  <div id="host"></div>
+  <div class="pgend">背景与表头均为 <b>动态极光</b>(鼠标划过有涟漪波动) · 整页仅 1 个 WebGL 上下文 · 仅预览</div>
+
+<script>
+const GEARP='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z';
+function LOGO(gid){return '<svg viewBox="0 0 40 40" fill="none"><defs><linearGradient id="'+gid+'" x1="0" y1="1" x2="1" y2="0">'+
+  '<stop offset="0" stop-color="#38bdf8"/><stop offset=".55" stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>'+
+  '<g transform="translate(1,6) scale(1.15)"><g class="gear gspin"><path d="'+GEARP+'" fill="url(#'+gid+')"/></g></g>'+
+  '<g transform="translate(20,16) scale(0.72)"><g class="gear gspinr"><path d="'+GEARP+'" fill="url(#'+gid+')"/></g></g></svg>';}
+function ICO(c){return '<svg class="di" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>';}
+
+const THEMES=[
+  {id:'dark', name:'主题 1 · 暗夜科技',
+   vars:{'--txt':'#e8ecff','--muted':'#8590c0','--headfb':'#080b18','--bodyfb':'#080b16',
+     '--cardbg':'linear-gradient(180deg,rgba(26,32,58,.72),rgba(14,18,40,.82))','--cardborder':'rgba(120,140,255,.18)',
+     '--cardshadow':'0 24px 60px rgba(2,4,16,.6),inset 0 1px 0 rgba(255,255,255,.05)',
+     '--tileBg':'rgba(30,38,74,.5)','--tileBorder':'rgba(120,140,255,.16)','--hover':'#5b8bff',
+     '--btnGrad':'linear-gradient(135deg,#6366f1,#22d3ee)','--btnShadow':'0 8px 22px rgba(56,120,240,.4)',
+     '--tplBorder':'rgba(120,140,255,.28)','--tplFg':'#a9c0ff','--tplBg':'rgba(30,40,80,.4)',
+     '--titleGrad':'linear-gradient(92deg,#8fe3ff,#8b9cff,#c9a4ff)','--titleGlow':'drop-shadow(0 2px 16px rgba(90,130,255,.5))'},
+   tags:[['进账 · 收入','rgba(16,120,110,.28)','#5eead4'],['开票金额','rgba(140,40,60,.30)','#fda4af'],['客户名汇总','rgba(90,50,140,.32)','#d8b4fe']],
+   icoCol:['#5eead4','#fda4af','#c4b5fd'],
+   bg:{a:[0.03,0.04,0.10],b:[0.05,0.06,0.15],a1:[0.12,0.30,0.80],a2:[0.42,0.20,0.62],m1:0.95,m2:0.72,sc:1.6,sp:0.05},
+   hd:{a:[0.04,0.05,0.13],b:[0.07,0.08,0.20],a1:[0.16,0.55,0.98],a2:[0.48,0.30,0.9],m1:0.9,m2:0.62,sc:1.5,sp:0.5}},
+  {id:'indigo', name:'主题 2 · 深蓝专业',
+   vars:{'--txt':'#1f2540','--muted':'#6b7395','--headfb':'#e9edfb','--bodyfb':'#eef1fb',
+     '--cardbg':'#ffffff','--cardborder':'#e4e8f6','--cardshadow':'0 14px 36px rgba(79,70,229,.10)',
+     '--tileBg':'#f7f8ff','--tileBorder':'#e4e8f6','--hover':'#4f46e5',
+     '--btnGrad':'linear-gradient(135deg,#4f46e5,#2563eb)','--btnShadow':'0 8px 20px rgba(79,70,229,.3)',
+     '--tplBorder':'#dfe4f5','--tplFg':'#4f46e5','--tplBg':'#fff',
+     '--titleGrad':'linear-gradient(92deg,#4f46e5,#2563eb,#7c3aed)','--titleGlow':'drop-shadow(0 1px 8px rgba(79,70,229,.25))'},
+   tags:[['进账 · 收入','#e6f0ff','#2563eb'],['开票金额','#eae9ff','#4f46e5'],['客户名汇总','#efeaff','#6d28d9']],
+   icoCol:['#2563eb','#4f46e5','#6d28d9'],
+   bg:{a:[0.95,0.96,1.0],b:[0.90,0.92,0.99],a1:[0.56,0.63,0.96],a2:[0.73,0.79,1.0],m1:0.5,m2:0.34,sc:1.6,sp:0.05},
+   hd:{a:[0.93,0.95,1.0],b:[0.86,0.89,0.99],a1:[0.40,0.50,0.96],a2:[0.62,0.72,1.0],m1:0.72,m2:0.5,sc:1.5,sp:0.4}},
+  {id:'teal', name:'主题 3 · 青瓷雅致',
+   vars:{'--txt':'#1e2a2a','--muted':'#5f7373','--headfb':'#e8f1ee','--bodyfb':'#f2f0e9',
+     '--cardbg':'#fffdf8','--cardborder':'#e8e4d9','--cardshadow':'0 14px 36px rgba(20,80,70,.10)',
+     '--tileBg':'#faf8f2','--tileBorder':'#e8e4d9','--hover':'#0d9488',
+     '--btnGrad':'linear-gradient(135deg,#0f766e,#14b8a6)','--btnShadow':'0 8px 20px rgba(15,118,110,.3)',
+     '--tplBorder':'#e0dccf','--tplFg':'#0f766e','--tplBg':'#fff',
+     '--titleGrad':'linear-gradient(92deg,#0f766e,#0d9488,#b7791f)','--titleGlow':'drop-shadow(0 1px 8px rgba(15,118,110,.2))'},
+   tags:[['进账 · 收入','#dff3ec','#0d9488'],['开票金额','#fbeadd','#c2653a'],['客户名汇总','#f6efd9','#a67c1a']],
+   icoCol:['#0d9488','#c2653a','#a67c1a'],
+   bg:{a:[0.96,0.98,0.97],b:[0.90,0.96,0.94],a1:[0.35,0.75,0.68],a2:[0.62,0.87,0.80],m1:0.5,m2:0.34,sc:1.6,sp:0.05},
+   hd:{a:[0.94,0.98,0.96],b:[0.86,0.95,0.92],a1:[0.10,0.60,0.55],a2:[0.46,0.80,0.72],m1:0.72,m2:0.5,sc:1.5,sp:0.4}},
+];
+
+const host=document.getElementById('host');const CARDS=[];
+THEMES.forEach((th,i)=>{
+  const gid='lg'+i;
+  const tiles=th.tags.map((t,k)=>'<div class="drop"><span class="dtag" style="background:'+t[1]+';color:'+t[2]+'">'+t[0]+'</span>'+
+    ICO(th.icoCol[k])+'<div class="dact">点击或拖入文件</div><div class="tpl">下载模版</div></div>').join('');
+  const style=Object.entries(th.vars).map(([k,v])=>k+':'+v).join(';');
+  const wrap=document.createElement('div');wrap.className='mrow';
+  wrap.innerHTML='<div class="mtag">'+th.name+'</div>'+
+    '<div class="mock" style="'+style+'">'+
+      '<div class="mhead"><canvas></canvas><div class="brand"><span class="logo">'+LOGO(gid)+'</span>'+
+        '<div class="ttl"><h1>客户账目汇总工具</h1><div class="tsub">CLIENT · ACCOUNT · SUMMARY</div></div></div></div>'+
+      '<div class="mbody"><canvas class="mbg"></canvas>'+
+        '<div class="mcard"><h2><span class="step">1</span> 上传表格</h2><div class="hint">支持 .xlsx / .xls / .csv</div>'+
+          '<div class="drow">'+tiles+'</div>'+
+          '<div class="mfoot"><button class="genbtn">生成汇总表</button><div class="note">数据全部在本机浏览器中处理，不会上传到任何服务器。</div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  host.appendChild(wrap);
+  const [hcv,bcv]=wrap.querySelectorAll('canvas');
+  CARDS.push({cv:hcv,ctx:hcv.getContext('2d'),p:th.hd,vis:true});
+  CARDS.push({cv:bcv,ctx:bcv.getContext('2d'),p:th.bg,vis:true});
+});
+
+// ===== 共享 WebGL =====
+const glcv=document.createElement('canvas');
+let gl=null;try{gl=glcv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true});}catch(e){}
+const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+const FS='precision mediump float;uniform vec2 uRes;uniform float uT;uniform vec3 uA,uB,uAcc1,uAcc2;uniform vec2 uMouse;uniform float uMh;uniform float uScale,uMix1,uMix2,uSpeed;'+
+  'float hn(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}'+
+  'float nz(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);'+
+  'float a=hn(i),b=hn(i+vec2(1.0,0.0)),c=hn(i+vec2(0.0,1.0)),d=hn(i+vec2(1.0,1.0));return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}'+
+  'float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<5;i++){v+=a*nz(p);p=m*p;a*=0.5;}return v;}'+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec3 col=mix(uA,uB,uv.x);'+
+  'float t=uT*uSpeed;vec2 P=uv*vec2(ar,1.0)*uScale;'+
+  'vec2 mp=vec2(uMouse.x*ar,uMouse.y)*uScale;vec2 dir=P-mp;float md=length(dir);'+
+  'float env=exp(-md*md*2.0)*uMh;float wave=sin(md*12.0-uT*4.0);P+=normalize(dir+vec2(0.0001))*env*wave*0.12;'+
+  'vec2 q=vec2(fbm(P*1.4+vec2(0.0,t)),fbm(P*1.4+vec2(3.0,-t)));float f=fbm(P*2.0+q*1.5+t);'+
+  'col=mix(col,uAcc1,smoothstep(0.15,1.0,f)*uMix1);col=mix(col,uAcc2,smoothstep(0.55,1.15,f)*uMix2);'+
+  'gl_FragColor=vec4(col,1.0);}';
+function mk(){function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={};['uRes','uT','uA','uB','uAcc1','uAcc2','uMouse','uMh','uScale','uMix1','uMix2','uSpeed'].forEach(n=>u[n]=gl.getUniformLocation(p,n));
+  u.aP=gl.getAttribLocation(p,'p');return {p,u};}
+if(gl){
+  const P=mk();const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.useProgram(P.p);gl.enableVertexAttribArray(P.u.aP);gl.vertexAttribPointer(P.u.aP,2,gl.FLOAT,false,0,0);
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const c=CARDS.find(x=>x.cv===e.target);if(c)c.vis=e.isIntersecting;}),{rootMargin:'120px'});
+  CARDS.forEach(c=>io.observe(c.cv));
+  let MX=-1,MY=-1,SX=-1,SY=-1,ht=0,hv=0;
+  addEventListener('mousemove',e=>{MX=e.clientX;MY=e.clientY;if(SX<0){SX=MX;SY=MY;}ht=1;});
+  addEventListener('mouseout',e=>{if(!e.relatedTarget)ht=0;});
+  const t0=performance.now();
+  function frame(now){
+    const t=(now-t0)/1000,dpr=Math.min(devicePixelRatio||1,1.35);
+    if(SX>=0){SX+=(MX-SX)*0.07;SY+=(MY-SY)*0.07;}hv+=(ht-hv)*0.05;
+    for(const c of CARDS){
+      if(!c.vis)continue;
+      const cw=Math.max(1,Math.floor(c.cv.clientWidth*dpr)),ch=Math.max(1,Math.floor(c.cv.clientHeight*dpr));
+      if(glcv.width!==cw||glcv.height!==ch){glcv.width=cw;glcv.height=ch;}
+      gl.viewport(0,0,cw,ch);
+      const p=c.p;
+      gl.uniform2f(P.u.uRes,cw,ch);gl.uniform1f(P.u.uT,t);
+      gl.uniform3fv(P.u.uA,p.a);gl.uniform3fv(P.u.uB,p.b);gl.uniform3fv(P.u.uAcc1,p.a1);gl.uniform3fv(P.u.uAcc2,p.a2);
+      gl.uniform1f(P.u.uScale,p.sc);gl.uniform1f(P.u.uMix1,p.m1);gl.uniform1f(P.u.uMix2,p.m2);gl.uniform1f(P.u.uSpeed,p.sp);
+      const r=c.cv.getBoundingClientRect();let mh=0,mx=0,my=0;
+      if(SX>=r.left&&SX<=r.right&&SY>=r.top&&SY<=r.bottom&&r.width>0){mh=hv;mx=(SX-r.left)/r.width;my=1-(SY-r.top)/r.height;}
+      gl.uniform2f(P.u.uMouse,mx,my);gl.uniform1f(P.u.uMh,mh);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+      if(c.cv.width!==cw||c.cv.height!==ch){c.cv.width=cw;c.cv.height=ch;}
+      c.ctx.drawImage(glcv,0,0);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

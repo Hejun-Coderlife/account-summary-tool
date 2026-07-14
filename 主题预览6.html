@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浅色科技 · 6 套主题对比</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0a0d18;color:#dbe6f5;-webkit-font-smoothing:antialiased;padding:22px 18px 60px;}
+  .pgh{text-align:center;font-size:19px;font-weight:800;letter-spacing:1px;color:#cfe0ff;}
+  .pgs{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 26px;}
+  .mrow{max-width:1000px;margin:0 auto 38px;text-align:center;}
+  .mtag{display:inline-block;margin:0 auto 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#0a0d18;
+    background:linear-gradient(135deg,#8fd8ff,#c6a6ff);border-radius:999px;padding:4px 14px;}
+  .mock{border-radius:20px;overflow:hidden;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06);}
+  .mhead{position:relative;overflow:hidden;height:104px;display:flex;align-items:center;justify-content:center;background:var(--headfb);}
+  .mhead canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .mhead .brand{position:relative;z-index:2;display:inline-flex;align-items:center;gap:14px;}
+  .mhead .logo{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 8px rgba(80,110,220,.35));}
+  .gear{transform-box:fill-box;transform-origin:center;}
+  .gspin{animation:gspin 9s linear infinite;} .gspinr{animation:gspin 6s linear infinite reverse;}
+  @keyframes gspin{to{transform:rotate(360deg);}}
+  .ttl{text-align:left;line-height:1;}
+  .ttl h1{margin:0;font-size:27px;font-weight:800;letter-spacing:2px;background:var(--titleGrad);
+    -webkit-background-clip:text;background-clip:text;color:transparent;filter:var(--titleGlow);}
+  .tsub{font-size:10px;letter-spacing:4px;color:var(--muted);margin-top:6px;font-weight:700;}
+  .mbody{position:relative;padding:30px 30px 34px;background:var(--bodyfb);overflow:hidden;}
+  .mbody canvas.mbg{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
+  .mcard{position:relative;z-index:1;border-radius:16px;padding:22px 24px;
+    background:var(--cardbg);border:1px solid var(--cardborder);box-shadow:var(--cardshadow);color:var(--txt);}
+  .mcard h2{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;margin:0 0 3px;color:var(--txt);}
+  .step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--btnGrad);color:#fff;
+    font-size:12px;align-items:center;justify-content:center;font-weight:700;}
+  .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+  .drow{display:grid;grid-template-columns:1fr 1fr 0.72fr;gap:15px;}
+  .drop{border:1.5px solid var(--tileBorder);border-radius:13px;padding:20px 16px;text-align:center;background:var(--tileBg);transition:.15s;}
+  .drop:hover{border-color:var(--hover);transform:translateY(-2px);}
+  .dtag{display:inline-block;font-size:12px;font-weight:700;padding:2px 11px;border-radius:999px;margin-bottom:9px;}
+  .di{width:30px;height:30px;display:block;margin:2px auto 9px;}
+  .dact{font-size:13.5px;font-weight:600;color:var(--txt);}
+  .tpl{display:inline-block;margin-top:10px;font-size:12px;padding:4px 12px;border-radius:7px;
+    border:1px solid var(--tplBorder);color:var(--tplFg);background:var(--tplBg);}
+  .mfoot{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--tileBorder);}
+  .genbtn{border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:700;color:#fff;
+    background:var(--btnGrad);box-shadow:var(--btnShadow);cursor:pointer;}
+  .note{color:var(--muted);font-size:12px;margin-top:11px;}
+  .pgend{text-align:center;color:#66799b;font-size:12px;margin-top:10px;}
+  .pgend b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <div class="pgh">浅色科技 · 6 套主题</div>
+  <div class="pgs">同一套样板、6 种科技配色。背景/表头都是动态极光(鼠标划过有涟漪波动)。选好告诉我「用主题X」。</div>
+  <div id="host"></div>
+  <div class="pgend">整页仅 <b>1 个 WebGL 上下文</b> · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const GEARP='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z';
+function LOGO(gid,c1,c2,c3){return '<svg viewBox="0 0 40 40" fill="none"><defs><linearGradient id="'+gid+'" x1="0" y1="1" x2="1" y2="0">'+
+  '<stop offset="0" stop-color="'+c1+'"/><stop offset=".55" stop-color="'+c2+'"/><stop offset="1" stop-color="'+c3+'"/></linearGradient></defs>'+
+  '<g transform="translate(1,6) scale(1.15)"><g class="gear gspin"><path d="'+GEARP+'" fill="url(#'+gid+')"/></g></g>'+
+  '<g transform="translate(20,16) scale(0.72)"><g class="gear gspinr"><path d="'+GEARP+'" fill="url(#'+gid+')"/></g></g></svg>';}
+function ICO(c){return '<svg class="di" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>';}
+
+const EXP=['开票金额','#fbeede','#b45309'];  // 开票统一暖色，便于区分
+function T(name,g,acc,inc,mst,bg,hd){
+  return {name,logo:g,
+    vars:{'--txt':'#20293a','--muted':'#6a7690','--headfb':g.hf,'--bodyfb':g.bf,
+      '--cardbg':'#ffffff','--cardborder':g.bd,'--cardshadow':'0 14px 36px '+g.sh,
+      '--tileBg':g.tl,'--tileBorder':g.bd,'--hover':acc,
+      '--btnGrad':g.btn,'--btnShadow':'0 8px 20px '+g.bs,
+      '--tplBorder':g.bd,'--tplFg':acc,'--tplBg':'#fff',
+      '--titleGrad':g.tg,'--titleGlow':'drop-shadow(0 1px 8px '+g.tgl+')'},
+    tags:[['进账 · 收入',inc[0],inc[1]],EXP,['客户名汇总',mst[0],mst[1]]],
+    icoCol:[inc[1],EXP[2],mst[1]], bg,hd};
+}
+const THEMES=[
+  T('主题 1 · 天蓝科技',
+    {hf:'#e9f1fe',bf:'#eef4fe',bd:'#e0e8f6',sh:'rgba(37,99,235,.10)',tl:'#f5f9ff',btn:'linear-gradient(135deg,#2563eb,#22d3ee)',bs:'rgba(37,99,235,.3)',tg:'linear-gradient(92deg,#2563eb,#0ea5e9,#06b6d4)',tgl:'rgba(37,120,235,.25)'},
+    '#2563eb',['#e3efff','#2563eb'],['#e2f6fb','#0891b2'],
+    {a:[0.95,0.97,1.0],b:[0.89,0.93,1.0],a1:[0.42,0.66,1.0],a2:[0.66,0.84,1.0],m1:0.55,m2:0.38,sc:1.6,sp:0.05},
+    {a:[0.93,0.96,1.0],b:[0.85,0.90,1.0],a1:[0.30,0.58,1.0],a2:[0.55,0.78,1.0],m1:0.72,m2:0.5,sc:1.5,sp:0.4}),
+  T('主题 2 · 靛紫科技',
+    {hf:'#efecfe',bf:'#f1eefe',bd:'#e7e3f6',sh:'rgba(99,102,241,.10)',tl:'#f8f6ff',btn:'linear-gradient(135deg,#6366f1,#a855f7)',bs:'rgba(99,102,241,.3)',tg:'linear-gradient(92deg,#4f46e5,#7c3aed,#a855f7)',tgl:'rgba(120,80,240,.25)'},
+    '#6d28d9',['#eae9ff','#4f46e5'],['#f0e9ff','#7c3aed'],
+    {a:[0.96,0.96,1.0],b:[0.92,0.90,1.0],a1:[0.58,0.50,0.98],a2:[0.78,0.70,1.0],m1:0.55,m2:0.38,sc:1.6,sp:0.05},
+    {a:[0.95,0.94,1.0],b:[0.89,0.86,1.0],a1:[0.48,0.38,0.98],a2:[0.68,0.58,1.0],m1:0.72,m2:0.5,sc:1.5,sp:0.4}),
+  T('主题 3 · 青碧科技',
+    {hf:'#e6f5f8',bf:'#edf6f8',bd:'#dbe9ec',sh:'rgba(8,145,178,.10)',tl:'#f3fbfc',btn:'linear-gradient(135deg,#0891b2,#06b6d4)',bs:'rgba(8,145,178,.3)',tg:'linear-gradient(92deg,#0e7490,#0891b2,#06b6d4)',tgl:'rgba(8,145,178,.25)'},
+    '#0891b2',['#dbf4f7','#0e7490'],['#e6f7ef','#059669'],
+    {a:[0.94,0.99,1.0],b:[0.87,0.96,0.99],a1:[0.28,0.72,0.85],a2:[0.55,0.86,0.95],m1:0.55,m2:0.38,sc:1.6,sp:0.05},
+    {a:[0.92,0.98,1.0],b:[0.84,0.95,0.99],a1:[0.14,0.62,0.80],a2:[0.45,0.82,0.94],m1:0.72,m2:0.5,sc:1.5,sp:0.4}),
+  T('主题 4 · 薄荷科技',
+    {hf:'#e6f6ee',bf:'#eef7f1',bd:'#dcebe1',sh:'rgba(5,150,105,.10)',tl:'#f3fbf6',btn:'linear-gradient(135deg,#059669,#10b981)',bs:'rgba(5,150,105,.3)',tg:'linear-gradient(92deg,#047857,#059669,#10b981)',tgl:'rgba(5,150,105,.25)'},
+    '#059669',['#dcf5e8','#059669'],['#e2f6fb','#0891b2'],
+    {a:[0.95,1.0,0.97],b:[0.88,0.98,0.92],a1:[0.30,0.80,0.55],a2:[0.58,0.90,0.72],m1:0.5,m2:0.34,sc:1.6,sp:0.05},
+    {a:[0.93,0.99,0.96],b:[0.85,0.97,0.90],a1:[0.14,0.70,0.48],a2:[0.46,0.86,0.66],m1:0.7,m2:0.48,sc:1.5,sp:0.4}),
+  T('主题 5 · 珊瑚科技',
+    {hf:'#fdece6',bf:'#fdf0ec',bd:'#f3e2da',sh:'rgba(234,88,12,.10)',tl:'#fff6f3',btn:'linear-gradient(135deg,#f97316,#fb7185)',bs:'rgba(234,88,12,.3)',tg:'linear-gradient(92deg,#ea580c,#f43f5e,#e11d48)',tgl:'rgba(234,88,12,.22)'},
+    '#ea580c',['#ffe9e0','#ea580c'],['#ffe4ec','#e11d48'],
+    {a:[1.0,0.97,0.95],b:[1.0,0.92,0.90],a1:[1.0,0.60,0.45],a2:[1.0,0.78,0.68],m1:0.5,m2:0.34,sc:1.6,sp:0.05},
+    {a:[1.0,0.96,0.94],b:[1.0,0.90,0.88],a1:[1.0,0.50,0.38],a2:[1.0,0.72,0.60],m1:0.7,m2:0.48,sc:1.5,sp:0.4}),
+  T('主题 6 · 石墨蓝科技',
+    {hf:'#eaeef4',bf:'#eef1f6',bd:'#e0e5ee',sh:'rgba(51,65,85,.10)',tl:'#f5f7fb',btn:'linear-gradient(135deg,#475569,#0ea5e9)',bs:'rgba(51,65,85,.3)',tg:'linear-gradient(92deg,#334155,#475569,#0284c7)',tgl:'rgba(51,65,85,.22)'},
+    '#0284c7',['#e6edf6','#334155'],['#e0f0fb','#0284c7'],
+    {a:[0.96,0.97,0.99],b:[0.91,0.93,0.97],a1:[0.42,0.52,0.66],a2:[0.62,0.72,0.86],m1:0.5,m2:0.34,sc:1.6,sp:0.05},
+    {a:[0.94,0.96,0.99],b:[0.88,0.91,0.97],a1:[0.30,0.42,0.62],a2:[0.55,0.66,0.85],m1:0.7,m2:0.48,sc:1.5,sp:0.4}),
+];
+
+const host=document.getElementById('host');const CARDS=[];
+THEMES.forEach((th,i)=>{
+  const gid='lg'+i;
+  const tiles=th.tags.map((t,k)=>'<div class="drop"><span class="dtag" style="background:'+t[1]+';color:'+t[2]+'">'+t[0]+'</span>'+
+    ICO(th.icoCol[k])+'<div class="dact">点击或拖入文件</div><div class="tpl">下载模版</div></div>').join('');
+  const style=Object.entries(th.vars).map(([k,v])=>k+':'+v).join(';');
+  const g=th.logo;
+  const wrap=document.createElement('div');wrap.className='mrow';
+  wrap.innerHTML='<div class="mtag">'+th.name+'</div>'+
+    '<div class="mock" style="'+style+'">'+
+      '<div class="mhead"><canvas></canvas><div class="brand"><span class="logo">'+LOGO(gid,'#38bdf8','#6366f1','#a855f7')+'</span>'+
+        '<div class="ttl"><h1>客户账目汇总工具</h1><div class="tsub">CLIENT · ACCOUNT · SUMMARY</div></div></div></div>'+
+      '<div class="mbody"><canvas class="mbg"></canvas>'+
+        '<div class="mcard"><h2><span class="step">1</span> 上传表格</h2><div class="hint">支持 .xlsx / .xls / .csv</div>'+
+          '<div class="drow">'+tiles+'</div>'+
+          '<div class="mfoot"><button class="genbtn">生成汇总表</button><div class="note">数据全部在本机浏览器中处理，不会上传到任何服务器。</div></div>'+
+        '</div></div></div>';
+  host.appendChild(wrap);
+  const [hcv,bcv]=wrap.querySelectorAll('canvas');
+  CARDS.push({cv:hcv,ctx:hcv.getContext('2d'),p:th.hd,vis:true});
+  CARDS.push({cv:bcv,ctx:bcv.getContext('2d'),p:th.bg,vis:true});
+});
+
+const glcv=document.createElement('canvas');
+let gl=null;try{gl=glcv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true});}catch(e){}
+const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+const FS='precision mediump float;uniform vec2 uRes;uniform float uT;uniform vec3 uA,uB,uAcc1,uAcc2;uniform vec2 uMouse;uniform float uMh;uniform float uScale,uMix1,uMix2,uSpeed;'+
+  'float hn(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}'+
+  'float nz(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);'+
+  'float a=hn(i),b=hn(i+vec2(1.0,0.0)),c=hn(i+vec2(0.0,1.0)),d=hn(i+vec2(1.0,1.0));return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}'+
+  'float fbm(vec2 p){float v=0.0,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<5;i++){v+=a*nz(p);p=m*p;a*=0.5;}return v;}'+
+  'void main(){vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec3 col=mix(uA,uB,uv.x);'+
+  'float t=uT*uSpeed;vec2 P=uv*vec2(ar,1.0)*uScale;'+
+  'vec2 mp=vec2(uMouse.x*ar,uMouse.y)*uScale;vec2 dir=P-mp;float md=length(dir);'+
+  'float env=exp(-md*md*2.0)*uMh;float wave=sin(md*12.0-uT*4.0);P+=normalize(dir+vec2(0.0001))*env*wave*0.12;'+
+  'vec2 q=vec2(fbm(P*1.4+vec2(0.0,t)),fbm(P*1.4+vec2(3.0,-t)));float f=fbm(P*2.0+q*1.5+t);'+
+  'col=mix(col,uAcc1,smoothstep(0.15,1.0,f)*uMix1);col=mix(col,uAcc2,smoothstep(0.55,1.15,f)*uMix2);'+
+  'gl_FragColor=vec4(col,1.0);}';
+function mk(){function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={};['uRes','uT','uA','uB','uAcc1','uAcc2','uMouse','uMh','uScale','uMix1','uMix2','uSpeed'].forEach(n=>u[n]=gl.getUniformLocation(p,n));
+  u.aP=gl.getAttribLocation(p,'p');return {p,u};}
+if(gl){
+  const P=mk();const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.useProgram(P.p);gl.enableVertexAttribArray(P.u.aP);gl.vertexAttribPointer(P.u.aP,2,gl.FLOAT,false,0,0);
+  const io=new IntersectionObserver(es=>es.forEach(e=>{const c=CARDS.find(x=>x.cv===e.target);if(c)c.vis=e.isIntersecting;}),{rootMargin:'120px'});
+  CARDS.forEach(c=>io.observe(c.cv));
+  let MX=-1,MY=-1,SX=-1,SY=-1,ht=0,hv=0;
+  addEventListener('mousemove',e=>{MX=e.clientX;MY=e.clientY;if(SX<0){SX=MX;SY=MY;}ht=1;});
+  addEventListener('mouseout',e=>{if(!e.relatedTarget)ht=0;});
+  const t0=performance.now();
+  function frame(now){
+    const t=(now-t0)/1000,dpr=Math.min(devicePixelRatio||1,1.35);
+    if(SX>=0){SX+=(MX-SX)*0.07;SY+=(MY-SY)*0.07;}hv+=(ht-hv)*0.05;
+    for(const c of CARDS){
+      if(!c.vis)continue;
+      const cw=Math.max(1,Math.floor(c.cv.clientWidth*dpr)),ch=Math.max(1,Math.floor(c.cv.clientHeight*dpr));
+      if(glcv.width!==cw||glcv.height!==ch){glcv.width=cw;glcv.height=ch;}
+      gl.viewport(0,0,cw,ch);const p=c.p;
+      gl.uniform2f(P.u.uRes,cw,ch);gl.uniform1f(P.u.uT,t);
+      gl.uniform3fv(P.u.uA,p.a);gl.uniform3fv(P.u.uB,p.b);gl.uniform3fv(P.u.uAcc1,p.a1);gl.uniform3fv(P.u.uAcc2,p.a2);
+      gl.uniform1f(P.u.uScale,p.sc);gl.uniform1f(P.u.uMix1,p.m1);gl.uniform1f(P.u.uMix2,p.m2);gl.uniform1f(P.u.uSpeed,p.sp);
+      const r=c.cv.getBoundingClientRect();let mh=0,mx=0,my=0;
+      if(SX>=r.left&&SX<=r.right&&SY>=r.top&&SY<=r.bottom&&r.width>0){mh=hv;mx=(SX-r.left)/r.width;my=1-(SY-r.top)/r.height;}
+      gl.uniform2f(P.u.uMouse,mx,my);gl.uniform1f(P.u.uMh,mh);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+      if(c.cv.width!==cw||c.cv.height!==ch){c.cv.width=cw;c.cv.height=ch;}
+      c.ctx.drawImage(glcv,0,0);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全新科技风 · 6 套主题</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#0a0d18;color:#dbe6f5;-webkit-font-smoothing:antialiased;padding:22px 18px 60px;}
+  .pgh{text-align:center;font-size:19px;font-weight:800;letter-spacing:1px;color:#cfe0ff;}
+  .pgs{text-align:center;color:#8090b5;font-size:13px;margin:8px 0 26px;}
+  .mrow{max-width:1000px;margin:0 auto 38px;text-align:center;}
+  .mtag{display:inline-block;margin:0 auto 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#0a0d18;
+    background:linear-gradient(135deg,#8fd8ff,#c6a6ff);border-radius:999px;padding:4px 14px;}
+  .mock{border-radius:20px;overflow:hidden;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06);}
+  .mhead{position:relative;overflow:hidden;height:104px;display:flex;align-items:center;justify-content:center;background:var(--headfb);}
+  .mhead canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .mhead .brand{position:relative;z-index:2;display:inline-flex;align-items:center;gap:14px;}
+  .mhead .logo{width:52px;height:52px;flex:none;filter:drop-shadow(0 2px 8px rgba(80,110,220,.3));}
+  .gear{transform-box:fill-box;transform-origin:center;}
+  .gspin{animation:gspin 9s linear infinite;} .gspinr{animation:gspin 6s linear infinite reverse;}
+  @keyframes gspin{to{transform:rotate(360deg);}}
+  .ttl{text-align:left;line-height:1;}
+  .ttl h1{margin:0;font-size:27px;font-weight:800;letter-spacing:2px;background:var(--titleGrad);
+    -webkit-background-clip:text;background-clip:text;color:transparent;filter:var(--titleGlow);}
+  .tsub{font-size:10px;letter-spacing:4px;color:var(--muted);margin-top:6px;font-weight:700;}
+  .mbody{position:relative;padding:30px 30px 34px;background:var(--bodyfb);overflow:hidden;}
+  .mbody canvas.mbg{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
+  .mcard{position:relative;z-index:1;border-radius:16px;padding:22px 24px;
+    background:var(--cardbg);border:1px solid var(--cardborder);box-shadow:var(--cardshadow);color:var(--txt);}
+  .mcard h2{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;margin:0 0 3px;color:var(--txt);}
+  .step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--btnGrad);color:#fff;
+    font-size:12px;align-items:center;justify-content:center;font-weight:700;}
+  .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+  .drow{display:grid;grid-template-columns:1fr 1fr 0.72fr;gap:15px;}
+  .drop{border:1.5px solid var(--tileBorder);border-radius:13px;padding:20px 16px;text-align:center;background:var(--tileBg);transition:.15s;}
+  .drop:hover{border-color:var(--hover);transform:translateY(-2px);}
+  .dtag{display:inline-block;font-size:12px;font-weight:700;padding:2px 11px;border-radius:999px;margin-bottom:9px;}
+  .di{width:30px;height:30px;display:block;margin:2px auto 9px;}
+  .dact{font-size:13.5px;font-weight:600;color:var(--txt);}
+  .tpl{display:inline-block;margin-top:10px;font-size:12px;padding:4px 12px;border-radius:7px;
+    border:1px solid var(--tplBorder);color:var(--tplFg);background:var(--tplBg);}
+  .mfoot{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--tileBorder);}
+  .genbtn{border:none;border-radius:10px;padding:11px 26px;font-size:14px;font-weight:700;color:#fff;
+    background:var(--btnGrad);box-shadow:var(--btnShadow);cursor:pointer;}
+  .note{color:var(--muted);font-size:12px;margin-top:11px;}
+  .pgend{text-align:center;color:#66799b;font-size:12px;margin-top:10px;}
+  .pgend b{color:#9fc4f0;}
+</style>
+</head>
+<body>
+  <div class="pgh">全新科技风 · 6 套主题（各自不同设计语言）</div>
+  <div class="pgs">每套一种背景motif + 一套配色。选好告诉我「用新主题X」，我再套到真站并加互动。</div>
+  <div id="host"></div>
+  <div class="pgend">整页仅 <b>1 个 WebGL 上下文</b> · 仅预览，<b>不会改动你的网站</b></div>
+
+<script>
+const GEARP='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z';
+function LOGO(gid,c1,c2,c3){return '<svg viewBox="0 0 40 40" fill="none"><defs><linearGradient id="'+gid+'" x1="0" y1="1" x2="1" y2="0">'+
+  '<stop offset="0" stop-color="'+c1+'"/><stop offset=".55" stop-color="'+c2+'"/><stop offset="1" stop-color="'+c3+'"/></linearGradient></defs>'+
+  '<g transform="translate(1,6) scale(1.15)"><g class="gear gspin"><path d="'+GEARP+'" fill="url(#'+gid+')"/></g></g>'+
+  '<g transform="translate(20,16) scale(0.72)"><g class="gear gspinr"><path d="'+GEARP+'" fill="url(#'+gid+')"/></g></g></svg>';}
+function ICO(c){return '<svg class="di" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>';}
+
+const H='precision mediump float;uniform vec2 uRes;uniform float uT;';
+const SHADERS={
+  blueprint:H+'uniform vec3 uBg1,uBg2,uLine,uAcc;'+
+    'void main(){vec2 uv=gl_FragCoord.xy/uRes;float ar=uRes.x/uRes.y;vec3 col=mix(uBg1,uBg2,uv.y);'+
+    'vec2 g=vec2(uv.x*ar,uv.y)*24.0;g.x+=uT*0.3;vec2 e=abs(fract(g)-0.5);'+
+    'col=mix(col,uLine,smoothstep(0.5,0.47,max(e.x,e.y))*0.10);'+
+    'vec2 g2=vec2(uv.x*ar,uv.y)*5.0;g2.x+=uT*0.06;vec2 e2=abs(fract(g2)-0.5);'+
+    'col=mix(col,uLine,smoothstep(0.5,0.48,max(e2.x,e2.y))*0.22);'+
+    'col=mix(col,uAcc,smoothstep(0.47,0.5,min(e2.x,e2.y))*0.32);'+
+    'float scan=smoothstep(0.05,0.0,abs(uv.x-fract(uT*0.05)));col=mix(col,uAcc,scan*0.10);gl_FragColor=vec4(col,1.0);}',
+  mesh:H+'uniform vec3 uC0,uC1,uC2,uC3,uBase;'+
+    'void main(){vec2 uv=gl_FragCoord.xy/uRes;'+
+    'vec2 a0=vec2(0.2+0.16*sin(uT*0.28),0.3+0.12*cos(uT*0.23));'+
+    'vec2 a1=vec2(0.82+0.12*sin(uT*0.25+1.0),0.24+0.15*cos(uT*0.31+2.0));'+
+    'vec2 a2=vec2(0.28+0.14*sin(uT*0.21+3.0),0.80+0.12*cos(uT*0.27+1.5));'+
+    'vec2 a3=vec2(0.76+0.15*sin(uT*0.30+2.5),0.78+0.13*cos(uT*0.19+0.5));'+
+    'float k=6.0;float w0=exp(-dot(uv-a0,uv-a0)*k),w1=exp(-dot(uv-a1,uv-a1)*k),w2=exp(-dot(uv-a2,uv-a2)*k),w3=exp(-dot(uv-a3,uv-a3)*k);'+
+    'float s=w0+w1+w2+w3+0.4;vec3 col=(uC0*w0+uC1*w1+uC2*w2+uC3*w3+uBase*0.4)/s;gl_FragColor=vec4(col,1.0);}',
+  dots:H+'uniform vec3 uBg1,uBg2,uDot1,uDot2;'+
+    'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;vec2 ctr=vec2(uRes.x/uRes.y*0.5,0.5);'+
+    'vec3 col=mix(uBg1,uBg2,gl_FragCoord.y/uRes.y);float cell=0.05;'+
+    'vec2 idc=(floor(uv/cell)+0.5)*cell;vec2 f=uv-idc;float d=length(idc-ctr);'+
+    'float wave=0.5+0.5*sin(d*9.0-uT*2.2);float rad=(0.12+0.30*wave)*cell;'+
+    'float m=smoothstep(rad,rad*0.5,length(f));vec3 dc=mix(uDot1,uDot2,wave);col=mix(col,dc,m*0.5);gl_FragColor=vec4(col,1.0);}',
+  hex:H+'uniform vec3 uBg,uFill,uEdge;'+
+    'void main(){vec2 uv=gl_FragCoord.xy/uRes.y*6.0;vec2 s=vec2(1.0,1.7320508);vec2 hs=0.5*s;'+
+    'vec2 a=mod(uv,s)-hs;vec2 b=mod(uv+hs,s)-hs;vec2 gv=dot(a,a)<dot(b,b)?a:b;vec2 id=uv-gv;'+
+    'vec2 ctr=vec2(uRes.x/uRes.y*3.0,3.0);float hd=max(abs(gv.x)*0.8660254+abs(gv.y)*0.5,abs(gv.y));'+
+    'float pulse=0.5+0.5*sin(uT*1.6-length(id-ctr)*1.1);vec3 col=mix(uBg,uFill,pulse*0.5);'+
+    'col=mix(col,uEdge,smoothstep(0.46,0.5,hd)*0.5);gl_FragColor=vec4(col,1.0);}',
+  rings:H+'uniform vec3 uBg1,uBg2,uRing;'+
+    'void main(){vec2 uv=gl_FragCoord.xy/uRes.y;vec2 ctr=vec2(uRes.x/uRes.y*0.5,0.5);'+
+    'vec3 col=mix(uBg1,uBg2,gl_FragCoord.x/uRes.x);float d=length(uv-ctr);'+
+    'float e=abs(fract(d*7.0-uT*0.4)-0.5);col=mix(col,uRing,smoothstep(0.42,0.5,e)*0.28);'+
+    'float ang=atan(uv.y-ctr.y,uv.x-ctr.x);float sp=smoothstep(0.5,0.44,abs(fract(ang/6.2832*16.0)-0.5));'+
+    'col=mix(col,uRing,sp*0.08);gl_FragColor=vec4(col,1.0);}',
+  circuit:H+'uniform vec3 uBg1,uBg2,uTrace,uPulse;float h1(float n){return fract(sin(n)*43758.5453);}'+
+    'void main(){vec2 uv=gl_FragCoord.xy/uRes.y*8.0;vec3 col=mix(uBg1,uBg2,gl_FragCoord.y/uRes.y);'+
+    'vec2 f=abs(fract(uv)-0.5);col=mix(col,uTrace,smoothstep(0.5,0.46,max(f.x,f.y))*0.16);'+
+    'col=mix(col,uTrace,smoothstep(0.13,0.0,length(fract(uv)-0.5))*0.20);'+
+    'float onH=smoothstep(0.5,0.46,f.y);float hx=fract(uv.x-uT*1.2+h1(floor(uv.y))*9.0);'+
+    'col=mix(col,uPulse,smoothstep(0.09,0.0,hx)*onH*0.7);gl_FragColor=vec4(col,1.0);}',
+};
+
+function UI(acc,acc2,hf,bf,bd,tl,tg,tgl,card){return{
+  '--txt':'#20293a','--muted':'#6a7690','--headfb':hf,'--bodyfb':bf,
+  '--cardbg':card||'#ffffff','--cardborder':bd,'--cardshadow':'0 14px 36px rgba(40,60,120,.12)',
+  '--tileBg':tl,'--tileBorder':bd,'--hover':acc,
+  '--btnGrad':'linear-gradient(135deg,'+acc+','+acc2+')','--btnShadow':'0 8px 20px rgba(40,60,120,.28)',
+  '--tplBorder':bd,'--tplFg':acc,'--tplBg':'#fff',
+  '--titleGrad':tg,'--titleGlow':'drop-shadow(0 1px 8px '+tgl+')'};}
+
+const EXP=['开票金额','#fbeede','#b45309'];
+const THEMES=[
+  {name:'新主题 1 · 蓝图网格',sh:'blueprint',
+   pal:{uBg1:[0.94,0.965,1.0],uBg2:[0.88,0.92,0.99],uLine:[0.30,0.50,0.82],uAcc:[0.12,0.42,0.95]},
+   ui:UI('#1d4ed8','#0ea5e9','#eaf0fd','#eef3fd','#dde6f6','#f4f8ff','linear-gradient(92deg,#1d4ed8,#2563eb,#0ea5e9)','rgba(29,78,216,.22)'),
+   inc:['#e3edff','#1d4ed8'],mst:['#e2f4fb','#0369a1']},
+  {name:'新主题 2 · 玻璃流彩',sh:'mesh',
+   pal:{uC0:[0.72,0.85,1.0],uC1:[0.88,0.80,1.0],uC2:[0.80,0.96,0.92],uC3:[1.0,0.86,0.90],uBase:[0.96,0.97,1.0]},
+   ui:UI('#7c3aed','#ec4899','#eef0fb','#f0f1fb','#e6e6f4','#f8f8ff','linear-gradient(92deg,#7c3aed,#a855f7,#ec4899)','rgba(124,58,237,.22)','rgba(255,255,255,.78)'),
+   inc:['#eee9ff','#7c3aed'],mst:['#fde7f3','#db2777']},
+  {name:'新主题 3 · 点阵涟漪',sh:'dots',
+   pal:{uBg1:[0.97,0.98,1.0],uBg2:[0.93,0.95,1.0],uDot1:[0.34,0.55,1.0],uDot2:[0.62,0.50,1.0]},
+   ui:UI('#4f46e5','#6366f1','#edeffb','#f0f1fb','#e3e5f4','#f5f6ff','linear-gradient(92deg,#4f46e5,#6366f1,#818cf8)','rgba(79,70,229,.22)'),
+   inc:['#e9e9ff','#4f46e5'],mst:['#e6ecff','#3b5bdb']},
+  {name:'新主题 4 · 蜂窝六边',sh:'hex',
+   pal:{uBg:[0.95,0.99,1.0],uFill:[0.60,0.85,0.95],uEdge:[0.16,0.62,0.82]},
+   ui:UI('#0891b2','#06b6d4','#e6f5f9','#edf6f9','#d9e9ee','#f2fbfc','linear-gradient(92deg,#0e7490,#0891b2,#06b6d4)','rgba(8,145,178,.22)'),
+   inc:['#daf3f8','#0e7490'],mst:['#e0f2ec','#0f766e']},
+  {name:'新主题 5 · 同心波纹',sh:'rings',
+   pal:{uBg1:[0.985,0.975,1.0],uBg2:[0.94,0.92,1.0],uRing:[0.62,0.45,0.92]},
+   ui:UI('#7c3aed','#6366f1','#efecfb','#f1eefb','#e7e3f5','#f8f6ff','linear-gradient(92deg,#6d28d9,#7c3aed,#8b5cf6)','rgba(124,58,237,.22)'),
+   inc:['#efe8ff','#6d28d9'],mst:['#e9e9ff','#4f46e5']},
+  {name:'新主题 6 · 电路脉冲',sh:'circuit',
+   pal:{uBg1:[0.95,0.99,0.98],uBg2:[0.90,0.97,0.94],uTrace:[0.30,0.64,0.60],uPulse:[0.08,0.72,0.55]},
+   ui:UI('#0d9488','#10b981','#e6f5f1','#eef7f3','#dcebe4','#f3fbf7','linear-gradient(92deg,#0f766e,#0d9488,#10b981)','rgba(13,148,136,.22)'),
+   inc:['#daf3ea','#0d9488'],mst:['#e2f6fb','#0891b2']},
+];
+
+const host=document.getElementById('host');const CARDS=[];
+THEMES.forEach((th,i)=>{
+  const gid='lg'+i;
+  const tags=[['进账 · 收入',th.inc[0],th.inc[1]],EXP,['客户名汇总',th.mst[0],th.mst[1]]];
+  const ico=[th.inc[1],EXP[2],th.mst[1]];
+  const tiles=tags.map((t,k)=>'<div class="drop"><span class="dtag" style="background:'+t[1]+';color:'+t[2]+'">'+t[0]+'</span>'+
+    ICO(ico[k])+'<div class="dact">点击或拖入文件</div><div class="tpl">下载模版</div></div>').join('');
+  const style=Object.entries(th.ui).map(([k,v])=>k+':'+v).join(';');
+  const wrap=document.createElement('div');wrap.className='mrow';
+  wrap.innerHTML='<div class="mtag">'+th.name+'</div>'+
+    '<div class="mock" style="'+style+'">'+
+      '<div class="mhead"><canvas></canvas><div class="brand"><span class="logo">'+LOGO(gid,'#38bdf8','#6366f1','#a855f7')+'</span>'+
+        '<div class="ttl"><h1>客户账目汇总工具</h1><div class="tsub">CLIENT · ACCOUNT · SUMMARY</div></div></div></div>'+
+      '<div class="mbody"><canvas class="mbg"></canvas>'+
+        '<div class="mcard"><h2><span class="step">1</span> 上传表格</h2><div class="hint">支持 .xlsx / .xls / .csv</div>'+
+          '<div class="drow">'+tiles+'</div>'+
+          '<div class="mfoot"><button class="genbtn">生成汇总表</button><div class="note">数据全部在本机浏览器中处理，不会上传到任何服务器。</div></div>'+
+        '</div></div></div>';
+  host.appendChild(wrap);
+  const [hcv,bcv]=wrap.querySelectorAll('canvas');
+  CARDS.push({cv:hcv,ctx:hcv.getContext('2d'),sh:th.sh,pal:th.pal,vis:true});
+  CARDS.push({cv:bcv,ctx:bcv.getContext('2d'),sh:th.sh,pal:th.pal,vis:true});
+});
+
+const glcv=document.createElement('canvas');
+let gl=null;try{gl=glcv.getContext('webgl',{antialias:false,preserveDrawingBuffer:true});}catch(e){}
+const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
+function mk(fs){function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={aP:gl.getAttribLocation(p,'p')};const n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
+  for(let i=0;i<n;i++){const info=gl.getActiveUniform(p,i);u[info.name]=gl.getUniformLocation(p,info.name);}
+  return {p,u};}
+if(gl){
+  const PROG={};let err=null;
+  try{for(const k in SHADERS)PROG[k]=mk(SHADERS[k]);}catch(e){err=e;}
+  if(err){const d=document.createElement('div');d.style.cssText='color:#ff6b7a;text-align:center';d.textContent='着色器错误：'+err.message;document.body.appendChild(d);}
+  else{
+    const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    const io=new IntersectionObserver(es=>es.forEach(e=>{const c=CARDS.find(x=>x.cv===e.target);if(c)c.vis=e.isIntersecting;}),{rootMargin:'120px'});
+    CARDS.forEach(c=>io.observe(c.cv));
+    const t0=performance.now();
+    function frame(now){
+      const t=(now-t0)/1000,dpr=Math.min(devicePixelRatio||1,1.35);
+      for(const c of CARDS){
+        if(!c.vis)continue;
+        const pr=PROG[c.sh];
+        const cw=Math.max(1,Math.floor(c.cv.clientWidth*dpr)),ch=Math.max(1,Math.floor(c.cv.clientHeight*dpr));
+        if(glcv.width!==cw||glcv.height!==ch){glcv.width=cw;glcv.height=ch;}
+        gl.viewport(0,0,cw,ch);gl.useProgram(pr.p);
+        gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(pr.u.aP);gl.vertexAttribPointer(pr.u.aP,2,gl.FLOAT,false,0,0);
+        gl.uniform2f(pr.u.uRes,cw,ch);gl.uniform1f(pr.u.uT,t);
+        for(const key in c.pal){const loc=pr.u[key];if(loc==null)continue;const v=c.pal[key];
+          if(Array.isArray(v))gl.uniform3fv(loc,v);else gl.uniform1f(loc,v);}
+        gl.drawArrays(gl.TRIANGLES,0,3);
+        if(c.cv.width!==cw||c.cv.height!==ch){c.cv.width=cw;c.cv.height=ch;}
+        c.ctx.drawImage(glcv,0,0);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+}
+</script>
+</body>
+</html>
