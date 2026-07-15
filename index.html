@@ -348,7 +348,10 @@ function parseMaster(wb){
       if(row.filter(c=>String(c).trim()!=='').length>=1 && row.some(c=>KW.some(k=>String(c).includes(k)))){hr=r;break;}}
     if(hr<0)return;const H=(aoa[hr]||[]).map(x=>String(x||''));
     let col=H.findIndex(h=>['名称','客户','单位','户名'].some(k=>h.includes(k)));if(col<0)col=H.length-1;
-    for(let r=hr+1;r<aoa.length;r++){const v=cleanName((aoa[r]||[])[col]);if(v && !v.startsWith('（') && !v.startsWith('('))std.add(v);}});
+    for(let r=hr+1;r<aoa.length;r++){const v=cleanName((aoa[r]||[])[col]);
+      if(!v)continue;
+      if(v.includes('在此填写')||v.includes('以下按行')||v==='客户名称'||v==='客户名称(标准)'||v==='客户名称（标准）')continue; // 只跳过模板占位/表头行
+      std.add(v);}});
   return std;}
 function handleMaster(file){const reader=new FileReader();
   reader.onload=e=>{let wb;try{wb=XLSX.read(e.target.result,{type:'array'});}catch(err){alert('无法读取：'+err);return;}
