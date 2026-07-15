@@ -134,6 +134,10 @@
   .warn.ok h4{color:#15803d;}
   .warn .names{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;max-height:180px;overflow:auto;}
   .warn .chip{background:#fff;border:1px solid #fca5a5;color:#b91c1c;border-radius:6px;padding:2px 9px;font-size:12.5px;}
+  .warn-how{background:#fff;border:1px solid #fbcccc;border-radius:9px;padding:11px 13px;margin:12px 0;font-size:13px;color:#7f1d1d;line-height:1.75;}
+  .warn-how>b{display:block;margin-bottom:5px;color:#b91c1c;}
+  .warn-how>div{margin-top:5px;}
+  .warn-how b{color:#b91c1c;}
   .foot{text-align:center;color:#8891ab;font-size:12px;margin-top:20px;}
   .hidden{display:none;}
 </style>
@@ -282,8 +286,8 @@ function extractRows(entry){
 /* ============ 上传 ============ */
 /* ============ 模板校验：表头必须与模板一致 ============ */
 const TEMPLATES={
-  income:['序号','年份','月份','日','客户名称','金额(元)','备注'],
-  expense:['序号','年份','月份','日','单位名称','金额(元)','备注'],
+  income:['序号','年份','月份','日','客户名称','打款金额(元)','备注'],
+  expense:['序号','年份','月份','日','单位名称','开票金额(元)','备注'],
   master:['序号','客户名称（标准）'],
 };
 const CATNAME={income:'进账·收入',expense:'开票金额',master:'客户名汇总'};
@@ -394,8 +398,12 @@ function renderResult(){
   const stdLabel=store.master?'「客户名汇总」标准名单':`内置默认名单（${DEFAULT_STD.size} 个客户）`;
   if(r.newNames.length){
     wb.innerHTML=`<div class="warn"><h4>⚠️ 发现 ${r.newNames.length} 个不在${stdLabel}中的新客户名</h4>
-      <div>以下客户名未出现在${stdLabel}里（可能是新客户，或写法与标准名不一致），请核对并更新：</div>
+      <div>以下客户名未出现在${stdLabel}里（可能是新客户，或写法与标准名不一致），请核对：</div>
       <div class="names">${r.newNames.map(n=>`<span class="chip">${escapeHtml(n)}</span>`).join('')}</div>
+      <div class="warn-how"><b>怎么更新 👇</b>
+        <div><b>① 写法/错别字不一致</b>（如漏字、多空格、简称）→ 回原始表格把名字改成和标准名<b>完全一致</b>，再重新上传即可。</div>
+        <div><b>② 确实是新客户</b> → 点下方「下载新客户名清单」，把这些名字<b>补进你的「客户名汇总」表</b>（要含全部老客户+新客户），再从上方第 ③ 个上传口「客户名汇总」把这张表传上去；之后系统就<b>以你上传的这份名单为准</b>（不再用内置默认名单）。</div>
+      </div>
       <button class="btn ghost sm" onclick="downloadNewNames()">下载新客户名清单</button></div>`;}
   else{wb.innerHTML=`<div class="warn ok"><h4>✓ 全部 ${r.customers.length} 个客户名都在${stdLabel}中</h4></div>`;}
   document.getElementById('stats').innerHTML=`
@@ -501,8 +509,8 @@ function buildSheet(aoa,colW,headerRowIdx,moneyCols){
   ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:H,c:0},e:{r:H,c:ncol-1}})};
   if(moneyCols){const range=XLSX.utils.decode_range(ws['!ref']);
     for(let R=H+1;R<=range.e.r;R++)for(const c of moneyCols){const cell=ws[XLSX.utils.encode_cell({r:R,c})];if(cell&&cell.t==='n')cell.z='"¥"#,##0.00';}}
-  {const range=XLSX.utils.decode_range(ws['!ref']);   // 序号列（第0列）数字居中
-    for(let R=H+1;R<=range.e.r;R++){const cell=ws[XLSX.utils.encode_cell({r:R,c:0})];if(cell&&cell.t==='n')cell.s={alignment:{horizontal:'center',vertical:'center'}};}}
+  {const range=XLSX.utils.decode_range(ws['!ref']);   // 序号/年/月/日 列数字居中
+    for(let R=H+1;R<=range.e.r;R++)for(const cc of [0,1,2,3]){const cell=ws[XLSX.utils.encode_cell({r:R,c:cc})];if(cell&&cell.t==='n')cell.s={alignment:{horizontal:'center',vertical:'center'}};}}
   return ws;}
 async function saveFrozen(wb,filename,freezeRows){
   const arr=XLSX.write(wb,{type:'array',bookType:'xlsx'});const zip=await JSZip.loadAsync(arr);
@@ -520,12 +528,12 @@ window.downloadTemplate=async function(cat){
   const wb=XLSX.utils.book_new();
   if(cat==='master'){const aoa=[['序号','客户名称（标准）'],...MASTER_NAMES.map((n,i)=>[i+1,n])];
     XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[10,42],0),'客户名单');await saveFrozen(wb,'客户名汇总模版.xlsx');return;}
-  const isIncome=cat==='income',nameH=isIncome?'客户名称':'单位名称';
-  const aoa=[['序号','年份','月份','日',nameH,'金额(元)','备注'],
+  const isIncome=cat==='income',nameH=isIncome?'客户名称':'单位名称',amtH=isIncome?'打款金额(元)':'开票金额(元)';
+  const aoa=[['序号','年份','月份','日',nameH,amtH,'备注'],
     [1,2025,1,6,isIncome?'宁波示例电器有限公司':'浙江示例科技有限公司',isIncome?5984:24636,isIncome?'':'示例备注（可留空）'],
     [2,2025,1,9,'（在此填写客户/单位名称）',10000,''],
     ['（以下按行继续填写，序号可留空）','','','','','','']];
-  XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[8,8,8,6,32,14,22],0,[5]),isIncome?'进账明细':'开票明细');
+  XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[8,8,8,6,32,16,22],0,[5]),isIncome?'进账明细':'开票明细');
   await saveFrozen(wb,isIncome?'进账表格模版.xlsx':'开票表格模版.xlsx');};
 function styleSheet(ws,colW,moneyCols,titleRows){
   ws['!cols']=colW.map(w=>({wch:w}));
