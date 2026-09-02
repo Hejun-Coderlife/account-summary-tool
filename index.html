@@ -940,7 +940,7 @@ function buildSheet(aoa,colW,headerRowIdx,moneyCols){
   {const range=XLSX.utils.decode_range(ws['!ref']);   // 序号/年/月/日 列数字居中
     for(let R=H+1;R<=range.e.r;R++)for(const cc of [0,1,2,3]){const cell=ws[XLSX.utils.encode_cell({r:R,c:cc})];if(cell&&cell.t==='n')cell.s={alignment:{horizontal:'center',vertical:'center'}};}}
   return ws;}
-async function saveFrozen(wb,filename,freezeRows){
+async function saveFrozen(wb,filename,freezeRows,afRefs){
   const arr=XLSX.write(wb,{type:'array',bookType:'xlsx'});const zip=await JSZip.loadAsync(arr);
   const files=Object.keys(zip.files).filter(f=>/^xl\/worksheets\/sheet\d+\.xml$/.test(f))
     .sort((a,b)=>(+a.match(/(\d+)/)[1])-(+b.match(/(\d+)/)[1]));
@@ -951,6 +951,8 @@ async function saveFrozen(wb,filename,freezeRows){
     if(/<sheetView[^>]*\/>/.test(xml))xml=xml.replace(/<sheetView([^>]*)\/>/,'<sheetView$1>'+pane+'</sheetView>');
     else if(/<sheetView[^>]*>/.test(xml))xml=xml.replace(/(<sheetView[^>]*>)/,'$1'+pane);
     else xml=xml.replace(/(<worksheet[^>]*>)/,'$1<sheetViews><sheetView workbookViewId="0">'+pane+'</sheetView></sheetViews>');
+    const af=afRefs&&afRefs[fi];
+    if(af)xml=xml.replace(/<autoFilter ref="[^"]*"/,'<autoFilter ref="'+af+'"');
     zip.file(f,xml);}
   const blob=await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
@@ -972,7 +974,7 @@ window.downloadTemplate=async function(cat){
     ['（以下按行继续填写，序号可留空）','','','','','','']];
   XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[8,8,8,6,32,16,22],0,[5]),isIncome?'进账明细':'开票明细');
   await saveFrozen(wb,isIncome?'进账表格模版.xlsx':'开票表格模版.xlsx');};
-function styleSheet(ws,colW,moneyCols,titleRows){
+function styleSheet(ws,colW,moneyCols,titleRows,dataRows){
   ws['!cols']=colW.map(w=>({wch:w}));
   ws['!merges']=titleRows.map(r=>({s:{r,c:0},e:{r,c:colW.length-1}}));
   titleRows.forEach((r,idx)=>{const a=XLSX.utils.encode_cell({r,c:0});
@@ -981,6 +983,8 @@ function styleSheet(ws,colW,moneyCols,titleRows){
   const hr=Math.max.apply(null,titleRows)+1;   // 列头行（紧跟标题/副标题）灰底
   for(let c=0;c<colW.length;c++){const cell=ws[XLSX.utils.encode_cell({r:hr,c})];if(cell)cell.s=HEADER_STYLE;}
   ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:hr,c:0},e:{r:hr,c:colW.length-1}})};   // 列头行开筛选
+  if(dataRows!=null)   // SheetJS 写盘时会把筛选区撑到整表，这里记下期望范围，saveFrozen 里改回去
+    ws['!afWant']=XLSX.utils.encode_range({s:{r:hr,c:0},e:{r:hr+dataRows,c:colW.length-1}});
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++)for(const C of moneyCols){const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];if(cell&&cell.t==='n')cell.z='"¥"#,##0.00';}
   for(let R=range.s.r;R<=range.e.r;R++){const cell=ws[XLSX.utils.encode_cell({r:R,c:0})];   // 序号列（第0列）数字居中
@@ -1009,22 +1013,25 @@ function custAOA(c){
   aoa.push([]);aoa.push(['注：差额=进账−开票，电子承兑仅登记不计入差额']);
   aoa.push(['制单人：'+PREPARER]);aoa.push(['制单日期：'+todayCN()]);
   return aoa;}
-function makeSummarySheet(){return styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA()),[6,32,9,14,10,15,9,14,17],[3,5,7,8],[0,1]);}
-function makeCustSheet(c){return styleSheet(XLSX.utils.aoa_to_sheet(custAOA(c)),[6,15,13,14,13,13,30],[2,3,4,5],[0,1]);}
+function makeSummarySheet(){return styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA()),[6,32,9,14,10,15,9,14,17],[3,5,7,8],[0,1],result.customers.length);}
+function makeCustSheet(c){return styleSheet(XLSX.utils.aoa_to_sheet(custAOA(c)),[6,15,13,14,13,13,30],[2,3,4,5],[0,1],c.rows.length);}
 function sanitizeSheet(name,used){let s=String(name).replace(/[\[\]\*\?\/\\\:]/g,'_').slice(0,28)||'客户';
   let base=s,i=1;while(used.has(s)){s=base.slice(0,25)+'_'+(i++);}used.add(s);return s;}
 function periodTag(){const gp=dataPeriod();return gp?('_'+gp.replace(/\s*—\s*/g,'至').replace(/\s+/g,'')):'';}
 function downloadAll(){const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,makeSummarySheet(),'汇总表');const used=new Set(['汇总表']);
-  result.customers.forEach(c=>{XLSX.utils.book_append_sheet(wb,makeCustSheet(c),sanitizeSheet(c.name,used));});
-  saveFrozen(wb,'客户账目汇总'+periodTag()+'.xlsx',TOOL_FREEZE);}
+  const sheets=[makeSummarySheet()];XLSX.utils.book_append_sheet(wb,sheets[0],'汇总表');const used=new Set(['汇总表']);
+  result.customers.forEach(c=>{const ws=makeCustSheet(c);sheets.push(ws);
+    XLSX.utils.book_append_sheet(wb,ws,sanitizeSheet(c.name,used));});
+  saveFrozen(wb,'客户账目汇总'+periodTag()+'.xlsx',TOOL_FREEZE,sheets.map(w=>w['!afWant']));}
 const TOOL_FREEZE=3;   // 标题+副标题+列头 → 冻结前 3 行
-function downloadSummary(){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,makeSummarySheet(),'汇总表');
-  saveFrozen(wb,'客户汇总表'+periodTag()+'.xlsx',TOOL_FREEZE);}
+function downloadSummary(){const wb=XLSX.utils.book_new();const ws=makeSummarySheet();
+  XLSX.utils.book_append_sheet(wb,ws,'汇总表');
+  saveFrozen(wb,'客户汇总表'+periodTag()+'.xlsx',TOOL_FREEZE,[ws['!afWant']]);}
 function downloadCurrent(){if(activeTab==='__summary__'){downloadSummary();return;}
   const c=result.customers.find(x=>x.name===activeTab);if(!c)return;
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,makeCustSheet(c),sanitizeSheet(c.name,new Set()));
-  saveFrozen(wb,'客户_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx',TOOL_FREEZE);}
+  const wb=XLSX.utils.book_new();const ws=makeCustSheet(c);
+  XLSX.utils.book_append_sheet(wb,ws,sanitizeSheet(c.name,new Set()));
+  saveFrozen(wb,'客户_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx',TOOL_FREEZE,[ws['!afWant']]);}
 
 /* ============ 图片导出 ============ */
 function downloadImage(){
@@ -1242,10 +1249,13 @@ updateGenState();
     if(!pay.rows.length)return;
     const agg=sortList(payAgg()),grand=grandTotal();
     const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA(agg,grand)),[6,40,8,16,10],[3],[0,1]),'付款汇总');
-    XLSX.utils.book_append_sheet(wb,styleSheet(XLSX.utils.aoa_to_sheet(detailAOA()),[6,16,40,16,26],[3],[0,1]),'付款明细');
-    XLSX.utils.book_append_sheet(wb,styleSheet(XLSX.utils.aoa_to_sheet(yearAOA()),[12,10,18],[2],[0]),'按年汇总');
-    XLSX.writeFile(wb,'付款按供应商汇总'+payTag()+'.xlsx');
+    const s1=styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA(agg,grand)),[6,40,8,16,10],[3],[0,1],agg.length);
+    const s2=styleSheet(XLSX.utils.aoa_to_sheet(detailAOA()),[6,16,40,16,26],[3],[0,1],pay.rows.length);
+    const s3=styleSheet(XLSX.utils.aoa_to_sheet(yearAOA()),[12,10,18],[2],[0],payYearAgg().length);
+    XLSX.utils.book_append_sheet(wb,s1,'付款汇总');
+    XLSX.utils.book_append_sheet(wb,s2,'付款明细');
+    XLSX.utils.book_append_sheet(wb,s3,'按年汇总');
+    saveFrozen(wb,'付款按供应商汇总'+payTag()+'.xlsx',[3,3,2],[s1['!afWant'],s2['!afWant'],s3['!afWant']]);
   }
   /* ---- 导出图片 ---- */
   function downloadImage(){
