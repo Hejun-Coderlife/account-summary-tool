@@ -173,6 +173,32 @@
   .vseg.recv.active{color:var(--brand);}
   .vseg.pay.active{color:var(--pay);}
   .vseg .vico{width:16px;height:16px;flex:none;}
+  /* 表格格式切换（工具格式 / 财务格式） */
+  .fmtswitch{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 14px;}
+  .fmtlabel{font-size:12.5px;color:var(--muted);font-weight:700;margin-right:1px;}
+  .fseg{border:1px solid var(--line);background:#fff;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--muted);padding:7px 15px;border-radius:9px;cursor:pointer;transition:.15s;}
+  .fseg:hover{color:var(--ink);border-color:#c7d2e0;}
+  .fseg.active{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 2px 8px rgba(2,132,199,.22);}
+  /* 财务模板样式：灰底表头 D9D9D9 + 浅灰细网格，与模板文件一致 */
+  .tplsheet{max-width:1040px;padding:22px 26px 20px;}
+  .tpl-cap{text-align:center;font-size:15px;font-weight:700;color:#333;margin:0 0 12px;}
+  .tplwrap{border:none;border-radius:0;margin-top:0;}
+  .tpl-tbl{border-collapse:collapse;width:100%;font-size:13px;
+    font-family:"Songti SC","宋体",SimSun,serif;color:#000;}
+  .tpl-tbl th{background:#D9D9D9;color:#333;font-weight:700;font-size:13.5px;text-align:center;vertical-align:middle;
+    padding:6px 8px;border:1px solid #D9D9D9;border-bottom:1px solid #A6A6A6;white-space:nowrap;
+    position:sticky;top:0;z-index:2;cursor:default;box-shadow:none;}
+  .tpl-tbl thead tr.r2 th{top:32px;}
+  .tpl-tbl td{border:1px solid #D9D9D9;padding:5px 8px;vertical-align:middle;white-space:nowrap;
+    font-variant-numeric:tabular-nums;}
+  .tpl-tbl td.n{text-align:right;}
+  .tpl-tbl td.c{text-align:center;}
+  .tpl-tbl tbody tr:hover{background:#fafcff;}
+  .tpl-tbl tr.tpl-total td{font-weight:700;background:#fff;}
+  .opin{width:96px;font-family:inherit;font-size:12.5px;text-align:right;border:1px solid #e3c98a;border-radius:6px;padding:3px 6px;background:#fffbeb;color:var(--ink);}
+  .opin:focus{outline:none;border-color:var(--brand);background:#fff;}
+  .opshot{display:none;font-variant-numeric:tabular-nums;}
+  .capturing .opin{display:none;} .capturing .opshot{display:inline;}
   .p-sum-link{color:var(--pay);font-weight:600;}
   .p-detail-row>td{background:#fff8f3;padding:0 12px 10px;}
   .p-detail{overflow-x:auto;border:1px solid var(--pay-line);border-radius:8px;margin:2px 0 6px;}
@@ -213,7 +239,7 @@
     <p class="hint">支持 .xlsx / .xls / .csv</p>
     <div class="drop-row">
       <div class="drop income" id="dropIncome">
-        <span class="tag">进账 · 收入</span>
+        <span class="tag">银行进账</span>
         <svg class="drop-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14.5V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v3.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
         <div class="act">点击或拖入文件</div>
         <div class="tpl-link" onclick="event.stopPropagation();downloadTemplate('income')">下载模版</div>
@@ -266,12 +292,17 @@
     <div id="viewRecv">
     <div id="warnBox"></div>
     <div class="stats" id="stats"></div>
+    <div class="fmtswitch" id="fmtSwitch">
+      <span class="fmtlabel">表格格式</span>
+      <button class="fseg active" data-f="tool" onclick="switchFmt('tool')">工具格式</button>
+      <button class="fseg" data-f="fin" onclick="switchFmt('fin')">财务格式</button>
+    </div>
     <div class="toolbar" style="margin-bottom:14px;">
-      <button class="btn primary" id="dlAll"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg>下载汇总工作簿（含各客户分表）</button>
-      <button class="btn data" id="dlSummary"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.7h17M9.2 4.5v15"/></svg>仅下载汇总表</button>
-      <button class="btn data" id="dlCurrent"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7l5 5v13H6z"/><path d="M13 3v5h5"/><path d="M9 13h6M9 16.5h4"/></svg>下载当前客户分表</button>
-      <button class="btn img" id="dlImage"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg>下载当前表格图片</button>
-      <button class="btn img" id="dlAllImages"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v10.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M3 4.5h18V8H3z"/><path d="M10 12h4"/></svg>批量下载全部图片(ZIP)</button>
+      <button class="btn primary" id="dlAll"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg><span class="blbl">下载汇总表</span></button>
+      <button class="btn data" id="dlSummary"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.7h17M9.2 4.5v15"/></svg><span class="blbl">仅下载客户汇总表</span></button>
+      <button class="btn data" id="dlCurrent"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7l5 5v13H6z"/><path d="M13 3v5h5"/><path d="M9 13h6M9 16.5h4"/></svg><span class="blbl">下载当前客户明细表</span></button>
+      <button class="btn img" id="dlImage"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg><span class="blbl">下载当前表格图片</span></button>
+      <button class="btn img" id="dlAllImages"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v10.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M3 4.5h18V8H3z"/><path d="M10 12h4"/></svg><span class="blbl">批量下载全部图片(ZIP)</span></button>
       <span class="spacer"></span>
       <input type="text" class="search" id="search" placeholder="搜索客户名…">
     </div>
@@ -309,6 +340,11 @@ const MASTER_NAMES=["宁波市镇海隆庆金属制品厂(普通合伙)","宁波
 const store={income:[],expense:[],accept:[],master:null};
 let result=null,activeTab='__summary__',showRemark=true,sortKey='both',sortDir=-1;
 let currentView='recv';   // 结果区当前视图：recv=收款 / pay=付款
+let tblFmt='tool';        // 表格格式：tool=工具自有格式 / fin=财务给的模板格式
+/* 期初应收金额：手填优先，其次读「客户名汇总」表里的「期初」列 */
+const openingManual=new Map();
+try{const _o=JSON.parse(localStorage.getItem('acct_opening_v1')||'{}');
+  Object.keys(_o).forEach(k=>openingManual.set(k,Number(_o[k])||0));}catch(e){}
 
 const NAME_KEYS=['户名','单位','名称','客户','对方','付款','收款','公司','厂','客商','往来'];
 const AMT_KEYS=['金额','交易金额','发生额','收入','支出','价税','合计','元','款'];
@@ -328,6 +364,26 @@ function round2(n){return Math.round((n+Number.EPSILON)*100)/100;}
 function todayCN(){const d=new Date();return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function escapeAttr(s){return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+function saveOpening(){try{const o={};openingManual.forEach((v,k)=>{if(v)o[k]=v;});
+  localStorage.setItem('acct_opening_v1',JSON.stringify(o));}catch(e){}}
+function getOpening(name){if(openingManual.has(name))return openingManual.get(name);
+  const m=store.master&&store.master.opening;return (m&&m.get(name))||0;}
+function finRecv(c){return round2(c.inSum+c.acSum);}   // 财务口径「收款金额」= 进账 + 电子承兑
+window.setOpening=(name,v)=>{const n=Number(String(v==null?'':v).replace(/[,¥￥\s]/g,''))||0;
+  openingManual.set(name,round2(n));saveOpening();renderPanel();};
+const BTN_LBL={
+  dlAll:['下载汇总表','下载汇总表'],
+  dlSummary:['仅下载客户汇总表','仅下载客户汇总表'],
+  dlCurrent:['下载当前客户明细表','下载当前客户明细表'],
+  dlImage:['下载当前表格图片','下载当前表格图片'],
+  dlAllImages:['批量下载全部图片(ZIP)','批量下载全部图片(ZIP)']};
+function renderFmtUI(){const i=tblFmt==='fin'?1:0;
+  Object.keys(BTN_LBL).forEach(id=>{const el=document.querySelector('#'+id+' .blbl');
+    if(el)el.textContent=BTN_LBL[id][i];});
+}
+window.switchFmt=f=>{tblFmt=f;
+  document.querySelectorAll('#fmtSwitch .fseg').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  renderFmtUI();renderPanel();};
 function findCol(headers,keys){for(let i=0;i<headers.length;i++){const h=String(headers[i]==null?'':headers[i]);for(const k of keys){if(h.includes(k))return i;}}return -1;}
 function analyzeSheet(aoa){
   let hr=-1;
@@ -375,7 +431,7 @@ const TEMPLATES={
   master:['序号','客户名称（标准）'],
   accept:['序号','日期','承兑号','收入金额','收入（客户）','付出金额','转付（供应商）'],
 };
-const CATNAME={income:'进账·收入',expense:'开票金额',accept:'电子承兑',master:'客户名汇总'};
+const CATNAME={income:'银行进账',expense:'开票金额',accept:'电子承兑',master:'客户名汇总'};
 /* 电子承兑：直接读承兑明细原文件，按列位置取 D列(索引3)=金额、E列(索引4)=客户名、B列(索引1)=日期、C列(索引2)=承兑号(作备注) */
 const AC_NAME_C=4,AC_AMT_C=3,AC_DATE_C=1,AC_NO_C=2;
 function pickAcceptSheet(wb){let best=null,bc=-1;
@@ -389,7 +445,7 @@ function headerRowOf(aoa){for(let r=0;r<Math.min(aoa.length,12);r++){const row=a
 function trimTail(a){a=a.slice();while(a.length&&String(a[a.length-1]).trim()==='')a.pop();return a;}
 /* 统一「表类型识别」：表头与某已知模板完全一致时，返回该类型，用于拦截「传错口」 */
 const ALL_TEMPLATES={
-  income:{label:'进账·收入',hdr:TEMPLATES.income},
+  income:{label:'银行进账',hdr:TEMPLATES.income},
   expense:{label:'开票金额',hdr:TEMPLATES.expense},
   master:{label:'客户名汇总',hdr:TEMPLATES.master},
   accept:{label:'电子承兑',hdr:TEMPLATES.accept},
@@ -461,22 +517,24 @@ function updateGenState(){
 
 /* ============ 客户名汇总（标准名单） ============ */
 function parseMaster(wb){
-  const KW=['名称','标准','客户','单位','户名','名单'];const std=new Set();
+  const KW=['名称','标准','客户','单位','户名','名单'];const std=new Set();const opening=new Map();
   wb.SheetNames.forEach(sn=>{const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
     let hr=-1;for(let r=0;r<Math.min(aoa.length,8);r++){const row=aoa[r]||[];
       if(row.filter(c=>String(c).trim()!=='').length>=1 && row.some(c=>KW.some(k=>String(c).includes(k)))){hr=r;break;}}
     if(hr<0)return;const H=(aoa[hr]||[]).map(x=>String(x||''));
     let col=H.findIndex(h=>['名称','客户','单位','户名'].some(k=>h.includes(k)));if(col<0)col=H.length-1;
+    const ocol=H.findIndex(h=>h.includes('期初'));   // 可选：期初应收金额列
     for(let r=hr+1;r<aoa.length;r++){const v=cleanName((aoa[r]||[])[col]);
       if(!v)continue;
       if(v.includes('在此填写')||v.includes('以下按行')||v==='客户名称'||v==='客户名称(标准)'||v==='客户名称（标准）')continue; // 只跳过模板占位/表头行
-      std.add(v);}});
-  return std;}
+      std.add(v);
+      if(ocol>=0){const ov=cleanNum((aoa[r]||[])[ocol]);if(ov)opening.set(v,round2(ov));}}});
+  return {std,opening};}
 function handleMaster(file){const reader=new FileReader();
   reader.onload=e=>{let wb;try{wb=XLSX.read(e.target.result,{type:'array'});}catch(err){alert('无法读取：'+err);return;}
     const mv=validateFile(wb,'master');if(!mv.ok){alert(mv.msg);return;}
-    const std=parseMaster(wb);if(std.size===0){alert('未能识别客户名清单，请使用「下载模版」的格式。');return;}
-    store.master={fileName:file.name,std};renderMaster();if(result)generate();};
+    const ms=parseMaster(wb);if(ms.std.size===0){alert('未能识别客户名清单，请使用「下载模版」的格式。');return;}
+    store.master={fileName:file.name,std:ms.std,opening:ms.opening};renderMaster();if(result)generate();};
   reader.readAsArrayBuffer(file);}
 function renderMaster(){const el=document.getElementById('masterStatus');
   if(!store.master){el.innerHTML='';return;}const m=store.master;
@@ -484,6 +542,7 @@ function renderMaster(){const el=document.getElementById('masterStatus');
     <span class="badge" style="background:#ede9fe;color:#6d28d9;">客户名汇总</span>
     <span class="fname">${escapeHtml(m.fileName)}</span>
     <span class="badge rows">${m.std.size} 个标准客户名</span>
+    ${m.opening&&m.opening.size?`<span class="badge rows">读到 ${m.opening.size} 个期初应收</span>`:''}
     <button class="rm" onclick="removeMaster()">移除</button></div></div>`;}
 window.removeMaster=()=>{store.master=null;renderMaster();if(result)generate();};
 window.downloadNewNames=()=>{if(!result||!result.newNames.length)return;
@@ -511,7 +570,7 @@ function generate(){
     totalIn:incomeRows.reduce((s,r)=>s+r.amount,0),totalOut:expenseRows.reduce((s,r)=>s+r.amount,0),
     totalAc:acceptRows.reduce((s,r)=>s+r.amount,0),
     inCount:incomeRows.length,outCount:expenseRows.length,acCount:acceptRows.length};
-  activeTab='__summary__';renderResult();}
+  activeTab='__summary__';renderResult();renderFmtUI();}
 
 /* ============ 收款 / 付款 双视图：生成 & 切换 ============ */
 function onGenerate(){
@@ -592,7 +651,7 @@ function summaryTable(){
   rows=[...rows].sort((a,b)=>{const va=km[sortKey](a),vb=km[sortKey](b);
     if(typeof va==='string')return sortDir*va.localeCompare(vb,'zh');return sortDir*(va-vb);});
   if(rows.length===0)return '<div class="empty">没有匹配的客户</div>';
-  return summaryDocHTML(rows);}
+  return tblFmt==='fin'?finSummaryDocHTML(rows):summaryDocHTML(rows);}
 function summaryDocHTML(rows){
   let tIn=0,tOut=0,tAc=0,tInC=0,tOutC=0,tAcC=0;
   const trs=rows.map((c,i)=>{tIn+=c.inSum;tOut+=c.outSum;tAc+=c.acSum;tInC+=c.inCount;tOutC+=c.outCount;tAcC+=c.acCount;
@@ -665,8 +724,208 @@ function statementHTML(c){
     <div class="st-foot">制单人：${escapeHtml(PREPARER)}<br>制单日期：${todayCN()}</div></div>`;}
 function custDetail(c){
   const ctrl=`<div class="cust-controls"><label><input type="checkbox" ${showRemark?'checked':''} onchange="toggleRemark(this.checked)"> 显示备注列</label></div>`;
-  return ctrl+statementHTML(c);}
+  return ctrl+(tblFmt==='fin'?finStatementHTML(c):statementHTML(c));}
 window.toggleRemark=v=>{showRemark=v;renderPanel();};
+
+
+const TPL_DETAIL_B64='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';
+const TPL_SUMMARY_B64='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';
+/* ============ 财务格式（完全套用财务给的两份模板文件） ============
+   口径：收款金额 = 进账 + 电子承兑；应收金额 = 期初应收 + 开票金额 − 收款金额
+   导出时直接以模板 .xlsx 为底稿写入数据，样式/列宽/行高/合并/筛选/页边距全部原样保留 */
+function finSummaryRows(list){
+  return list.map(c=>{const op=round2(getOpening(c.name)),inv=round2(c.outSum),recv=finRecv(c);
+    return {name:c.name,op,inv,recv,due:round2(op+inv-recv)};});}
+function finDetailOf(c){
+  const src=sortByDate(c.rows);const op=round2(getOpening(c.name));let run=op;const out=[];
+  if(op)out.push({date:'期初',chan:'',inv:'',recv:'',due:op,remark:'期初应收金额'});
+  for(const r of src){const isInv=r.category==='expense';
+    run=round2(run+(isInv?r.amount:-r.amount));
+    out.push({date:r.date||'',chan:isInv?'':(r.category==='accept'?'承兑':'银行收款'),
+      inv:isInv?round2(r.amount):'',recv:isInv?'':round2(r.amount),due:run,remark:r.remark||''});}
+  return {op,rows:out,inv:round2(c.outSum),recv:finRecv(c),due:run};}
+/* 常规(General)格式下 Excel 单元格显示成什么样，预览就显示成什么样 */
+function finNum(v){return (v===''||v==null)?'':String(round2(v));}
+
+/* ---------- 页面预览（照模板的灰底表头 + 浅灰细网格） ---------- */
+function finSummaryDocHTML(rows){
+  const d=finSummaryRows(rows);let tOp=0,tInv=0,tRecv=0,tDue=0;
+  const trs=d.map((r,i)=>{tOp+=r.op;tInv+=r.inv;tRecv+=r.recv;tDue+=r.due;
+    return `<tr><td class="c">${i+1}</td>
+      <td><a class="cust-link" onclick="switchTab('${escapeAttr(r.name)}')">${escapeHtml(r.name)}</a></td>
+      <td class="n"><input class="opin" type="number" step="0.01" value="${r.op||''}" placeholder="0"
+        onchange="setOpening('${escapeAttr(r.name)}',this.value)"><span class="opshot">${finNum(r.op)||''}</span></td>
+      <td class="n">${finNum(r.inv)}</td>
+      <td class="n">${finNum(r.recv)}</td>
+      <td class="n">${finNum(r.due)}</td></tr>`;}).join('');
+  const table=`<div class="tablewrap tplwrap"><table class="tpl-tbl">
+    <thead>
+      <tr><th rowspan="2">编号</th><th rowspan="2">客户名称</th><th rowspan="2">期初应收金额</th>
+        <th colspan="2">本期发生</th><th rowspan="2">应收金额</th></tr>
+      <tr class="r2"><th>开票金额</th><th>收款金额</th></tr>
+    </thead>
+    <tbody>${trs}
+      <tr class="tpl-total"><td></td><td>合计</td><td class="n">${finNum(tOp)}</td>
+        <td class="n">${finNum(tInv)}</td><td class="n">${finNum(tRecv)}</td><td class="n">${finNum(tDue)}</td></tr>
+    </tbody></table></div>`;
+  return `<div class="statement tplsheet"><div class="tpl-cap">客户汇总表</div>${table}</div>`;}
+function finStatementHTML(c){
+  const D=finDetailOf(c);
+  const trs=D.rows.map(r=>`<tr>
+      <td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.chan)}</td>
+      <td class="n">${finNum(r.inv)}</td><td class="n">${finNum(r.recv)}</td><td class="n">${finNum(r.due)}</td>
+      <td>${showRemark?escapeHtml(r.remark):''}</td></tr>`).join('');
+  return `<div class="statement tplsheet"><div class="tpl-cap">${escapeHtml(c.name)} · 客户明细表</div>
+    <div class="tablewrap tplwrap"><table class="tpl-tbl">
+      <thead><tr><th>日期</th><th>承兑/银行收款</th><th>开票金额</th><th>收款金额</th><th>应收金额</th><th>备注</th></tr></thead>
+      <tbody>${trs}
+        <tr class="tpl-total"><td>合计</td><td></td><td class="n">${finNum(D.inv)}</td>
+          <td class="n">${finNum(D.recv)}</td><td class="n">${finNum(D.due)}</td><td></td></tr>
+      </tbody></table></div></div>`;}
+/* ---------- 以模板 .xlsx 为底稿导出 ----------
+   只做两处必要改动：① 给模板样式表追加一个"不自动换行"的数据格样式（模板自带的
+   数据格开了 wrapText，日期/备注会被挤成两行）；② 按内容自动放宽列宽。
+   其余字体、灰底表头、网格线、行高、合并、筛选、页边距、theme 全部原样保留。      */
+function xmlEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function xmlUnesc(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');}
+const COLA='ABCDEFGHIJKLMN';
+/* 字体统一成宋体：两份模板原本一个用「宋体-简」、一个用 Calibri，这里拉齐 */
+const FIN_FONT='宋体';
+const FONT_DATA=`<font><sz val="11"/><color theme="1"/><name val="${FIN_FONT}"/><charset val="134"/></font>`;
+const FONT_HDR=`<font><b/><sz val="12"/><color rgb="FF333333"/><name val="${FIN_FONT}"/><charset val="134"/></font>`;
+/* 数据格：沿用模板的网格边框2、无填充，去掉 wrapText、改垂直居中 */
+function xfData(fid,ctr){return `<xf numFmtId="0" fontId="${fid}" fillId="0" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment${ctr?' horizontal="center"':''} vertical="center"/></xf>`;}
+/* 表头格：沿用模板的灰底 fill2 与边框号（汇总表首行 borderId=0，其余 borderId=1） */
+function xfHdr(fid,bid){return `<xf numFmtId="0" fontId="${fid}" fillId="2" borderId="${bid}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>`;}
+/* 往模板样式表里追加统一字体的数据格 + 两种表头格，返回新样式号 */
+function patchStyles(x){
+  const fd=addFont(x,FONT_DATA),fh=addFont(fd.xml,FONT_HDR);
+  const st=addXfs(fh.xml,[xfData(fd.id),xfHdr(fh.id,0),xfHdr(fh.id,1),xfData(fd.id,1)]);
+  return {xml:st.xml,data:st.base,h0:st.base+1,h1:st.base+2,ctr:st.base+3};}
+/* 表头样式重映射：模板原表头样式号 -> 统一字体后的新样式号 */
+const MAP_SUM=S=>({1:S.h0,2:S.h1,3:S.h1,4:S.data});
+const MAP_DET=S=>({1:S.h1});
+function addFont(x,frag){const n=+x.match(/<fonts count="(\d+)"/)[1];
+  return {xml:x.replace(/<fonts count="\d+"/,'<fonts count="'+(n+1)+'"').replace('</fonts>',frag+'</fonts>'),id:n};}
+function addXfs(x,frags){const n=+x.match(/<cellXfs count="(\d+)"/)[1];
+  return {xml:x.replace(/<cellXfs count="\d+"/,'<cellXfs count="'+(n+frags.length)+'"').replace('</cellXfs>',frags.join('')+'</cellXfs>'),base:n};}
+function parseSST(xml){return (xml.match(/<si>[\s\S]*?<\/si>/g)||[]).map(si=>{
+  const t=si.match(/<t[^>]*>([\s\S]*?)<\/t>/);return t?xmlUnesc(t[1]):'';});}
+/* 列宽：汉字按 2 个字符宽算，取内容与模板宽度的较大者 */
+function dispW(s){let n=0;const t=String(s==null?'':s);for(let i=0;i<t.length;i++)n+=t.charCodeAt(i)>255?2:1;return n;}
+function colW(vals,minW,maxW){let w=minW;for(const v of vals)w=Math.max(w,dispW(v)+2.5);return Math.round(Math.min(w,maxW)*1e4)/1e4;}
+function colsXML(ws){return '<cols>'+ws.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')+'</cols>';}
+function cellText(v){return v===''||v==null?'':(typeof v==='number'?String(round2(v)):String(v));}
+function tplCell(ref,st,v){
+  if(v===''||v==null)return `<c r="${ref}" s="${st}"/>`;
+  if(typeof v==='number')return `<c r="${ref}" s="${st}"><v>${v}</v></c>`;
+  return `<c r="${ref}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;}
+function tplRow(rn,vals,st,ht){
+  return `<row r="${rn}"${ht?` ht="${ht}"`:''} spans="1:${vals.length}">`
+    +vals.map((v,i)=>tplCell(COLA[i]+rn,Array.isArray(st)?st[i]:st,v)).join('')+'</row>';}
+/* 用模板 sheet1.xml 做底稿：保留表头行（样式号可重映射、共享字符串转内联）+ 版式，换掉数据区 */
+function tplSheetXML(spec,isFirst){
+  const base=spec.src,i=base.indexOf('<sheetData>'),j=base.indexOf('</sheetData>');
+  let head=base.slice(0,i);const tail=base.slice(j+12);
+  const hdr=(base.slice(i,j).match(/<row[^>]*\/>|<row[^>]*>[\s\S]*?<\/row>/g)||[]).slice(0,spec.hdrRows).join('')
+    .replace(/ s="(\d+)"/g,(m,n)=>' s="'+((spec.map&&spec.map[n]!=null)?spec.map[n]:n)+'"')
+    .replace(/ t="s"><v>(\d+)<\/v>/g,(m,n)=>' t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(spec.sst[+n]||'')+'</t></is>');
+  let body=hdr;
+  spec.rows.forEach((vals,k)=>{body+=tplRow(spec.hdrRows+1+k,vals,spec.dataSt,spec.rowHt);});
+  const last=Math.max(spec.hdrRows+spec.rows.length,spec.hdrRows),top='A'+(spec.hdrRows+1);
+  const pane=`<pane ySplit="${spec.hdrRows}" topLeftCell="${top}" activePane="bottomLeft" state="frozen"/>`
+    +`<selection pane="bottomLeft" activeCell="${top}" sqref="${top}"/>`;
+  head=head.replace(/<dimension ref="[^"]*"\/>/,`<dimension ref="A1:F${last}"/>`)
+           .replace(/<sheetView(\s[^>]*)?\/>/,(m,a)=>'<sheetView'+(a||'')+'></sheetView>')
+           .replace(/<sheetView(\s[^>]*)?>[\s\S]*?<\/sheetView>/,(m,a)=>'<sheetView'+(a||'')+'>'+pane+'</sheetView>')
+           .replace(/<cols>[\s\S]*?<\/cols>/,colsXML(spec.widths));
+  if(!isFirst)head=head.replace(/ tabSelected="1"/,'');
+  const tl=tail.replace(/<autoFilter ref="[^"]*"/,`<autoFilter ref="A${spec.hdrRows}:F${spec.hdrRows}"`);
+  return head+'<sheetData>'+body+'</sheetData>'+tl;}
+const RELNS='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+/* 组装工作簿：baseB64 提供 styles/theme/docProps，specs 决定各 sheet */
+async function assembleBook(baseB64,stylesXml,specs){
+  const zip=await JSZip.loadAsync(baseB64,{base64:true});
+  if(stylesXml)zip.file('xl/styles.xml',stylesXml);
+  specs.forEach((sp,i)=>zip.file('xl/worksheets/sheet'+(i+1)+'.xml',tplSheetXML(sp,i===0)));
+  let ct=await zip.file('[Content_Types].xml').async('string');
+  ct=ct.replace(/<Override PartName="\/xl\/worksheets\/sheet1\.xml"[^>]*\/>/,
+    specs.map((sp,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join(''));
+  zip.file('[Content_Types].xml',ct);
+  zip.file('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n'
+    +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    +specs.map((sp,i)=>`<Relationship Id="rSh${i+1}" Type="${RELNS}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')
+    +`<Relationship Id="rTheme" Type="${RELNS}/theme" Target="theme/theme1.xml"/>`
+    +`<Relationship Id="rSst" Type="${RELNS}/sharedStrings" Target="sharedStrings.xml"/>`
+    +`<Relationship Id="rStyles" Type="${RELNS}/styles" Target="styles.xml"/></Relationships>`);
+  let wx=await zip.file('xl/workbook.xml').async('string');
+  wx=wx.replace(/<sheets>[\s\S]*?<\/sheets>/,'<sheets>'
+      +specs.map((sp,i)=>`<sheet name="${xmlEsc(sp.name)}" sheetId="${i+1}" r:id="rSh${i+1}"/>`).join('')+'</sheets>');
+  wx=wx.replace(/<definedNames>[\s\S]*?<\/definedNames>/,'<definedNames>'
+      +specs.map((sp,i)=>`<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${xmlEsc(String(sp.name).replace(/'/g,"''"))}'!$A$${sp.hdrRows}:$F$${sp.hdrRows}</definedName>`).join('')+'</definedNames>');
+  zip.file('xl/workbook.xml',wx);
+  return zip;}
+async function tplParts(b64){const zip=await JSZip.loadAsync(b64,{base64:true});
+  return {sheet:await zip.file('xl/worksheets/sheet1.xml').async('string'),
+          styles:await zip.file('xl/styles.xml').async('string'),
+          sst:parseSST(await zip.file('xl/sharedStrings.xml').async('string'))};}
+
+/* ---------- 数据行 ---------- */
+function finSummaryData(){
+  const d=finSummaryRows(result.customers);let tOp=0,tInv=0,tRecv=0,tDue=0;
+  const rows=d.map((r,i)=>{tOp+=r.op;tInv+=r.inv;tRecv+=r.recv;tDue+=r.due;
+    return [i+1,r.name,r.op||'',r.inv||'',r.recv||'',r.due];});
+  rows.push(['','合计',round2(tOp),round2(tInv),round2(tRecv),round2(tDue)]);
+  return rows;}
+function finDetailData(c){const D=finDetailOf(c);
+  const rows=D.rows.map(r=>[r.date,r.chan,r.inv,r.recv,r.due,showRemark?r.remark:'']);
+  rows.push(['合计','',D.inv,D.recv,D.due,'']);
+  return rows;}
+function colVals(rows,i,hdr){return rows.map(r=>cellText(r[i])).concat(hdr?[hdr+'　']:[]);}
+function sumWidths(rows){return [8.0625,
+  colW(colVals(rows,1,'客户名称'),12.4688,42),17.0469,13.0156,13.0156,
+  colW(colVals(rows,5,'应收金额'),14.0234,18)];}
+function detWidths(rows){return [
+  colW(colVals(rows,0,'日期'),8.3438,20),17.2422,12.5547,13.0156,
+  colW(colVals(rows,4,'应收金额'),12.5,18),
+  colW(colVals(rows,5,'备注'),10.0859,40)];}
+const SUM_HDR=2,DET_HDR=1,DET_HT=17;
+function sumSpec(P,S,map){const rows=finSummaryData();
+  const dataSt=[S.ctr,S.data,S.data,S.data,S.data,S.data];   // 编号列居中
+  return {name:'客户名单',src:P.sheet,sst:P.sst,hdrRows:SUM_HDR,rows,dataSt,map,rowHt:0,widths:sumWidths(rows)};}
+function detSpecs(P,dataSt,map,list){const used=new Set();
+  return list.map(c=>{const rows=finDetailData(c);
+    return {name:sanitizeSheet(c.name,used),src:P.sheet,sst:P.sst,hdrRows:DET_HDR,rows,dataSt,map,
+            rowHt:DET_HT,widths:detWidths(rows)};});}
+
+/* ---------- 三种工作簿 ---------- */
+async function bookSummary(){const P=await tplParts(TPL_SUMMARY_B64),S=patchStyles(P.styles);
+  return assembleBook(TPL_SUMMARY_B64,S.xml,[sumSpec(P,S,MAP_SUM(S))]);}
+async function bookDetail(list){const P=await tplParts(TPL_DETAIL_B64),S=patchStyles(P.styles);
+  return assembleBook(TPL_DETAIL_B64,S.xml,detSpecs(P,S.data,MAP_DET(S),list));}
+/* 汇总表 + 各客户明细表 合成一个工作簿：以明细模板为底，汇总表沿用它自己的版式 */
+async function bookBoth(){
+  const D=await tplParts(TPL_DETAIL_B64),U=await tplParts(TPL_SUMMARY_B64),S=patchStyles(D.styles);
+  const specs=[sumSpec(U,S,MAP_SUM(S))].concat(detSpecs(D,S.data,MAP_DET(S),result.customers));
+  specs[0].name='客户汇总表';
+  return assembleBook(TPL_DETAIL_B64,S.xml,specs);}
+
+/* ---------- 下载 ---------- */
+function saveBlob(blob,filename){const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
+async function saveBook(zip,filename){saveBlob(await zip.generateAsync({type:'blob',
+  mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),filename);}
+async function withBtn(id,fn){const b=document.getElementById(id),old=b.innerHTML;
+  b.disabled=true;b.textContent='生成中…';
+  try{await fn();}catch(e){alert('导出失败：'+e);}finally{b.innerHTML=old;b.disabled=false;}}
+function downloadFinSummary(){return withBtn('dlSummary',async()=>{
+  await saveBook(await bookSummary(),'客户汇总表'+periodTag()+'.xlsx');});}
+function downloadFinCurrent(){return withBtn('dlCurrent',async()=>{
+  if(activeTab==='__summary__'){await saveBook(await bookSummary(),'客户汇总表'+periodTag()+'.xlsx');return;}
+  const c=result.customers.find(x=>x.name===activeTab);if(!c)return;
+  await saveBook(await bookDetail([c]),'客户明细表_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx');});}
+function downloadFinAll(){return withBtn('dlAll',async()=>{
+  await saveBook(await bookBoth(),'客户汇总表+客户明细表'+periodTag()+'.xlsx');});}
 
 /* ============ Excel 导出 ============ */
 const HEADER_STYLE={fill:{patternType:'solid',fgColor:{rgb:'D9D9D9'}},font:{color:{rgb:'333333'},bold:true,sz:12},
@@ -683,10 +942,12 @@ function buildSheet(aoa,colW,headerRowIdx,moneyCols){
   return ws;}
 async function saveFrozen(wb,filename,freezeRows){
   const arr=XLSX.write(wb,{type:'array',bookType:'xlsx'});const zip=await JSZip.loadAsync(arr);
-  const files=Object.keys(zip.files).filter(f=>/^xl\/worksheets\/sheet\d+\.xml$/.test(f));
-  const y=freezeRows||1;
-  const pane=`<pane ySplit="${y}" topLeftCell="A${y+1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>`;
-  for(const f of files){let xml=await zip.file(f).async('string');
+  const files=Object.keys(zip.files).filter(f=>/^xl\/worksheets\/sheet\d+\.xml$/.test(f))
+    .sort((a,b)=>(+a.match(/(\d+)/)[1])-(+b.match(/(\d+)/)[1]));
+  for(let fi=0;fi<files.length;fi++){const f=files[fi];
+    const y=(Array.isArray(freezeRows)?freezeRows[fi]:freezeRows)||1;
+    const pane=`<pane ySplit="${y}" topLeftCell="A${y+1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>`;
+    let xml=await zip.file(f).async('string');
     if(/<sheetView[^>]*\/>/.test(xml))xml=xml.replace(/<sheetView([^>]*)\/>/,'<sheetView$1>'+pane+'</sheetView>');
     else if(/<sheetView[^>]*>/.test(xml))xml=xml.replace(/(<sheetView[^>]*>)/,'$1'+pane);
     else xml=xml.replace(/(<worksheet[^>]*>)/,'$1<sheetViews><sheetView workbookViewId="0">'+pane+'</sheetView></sheetViews>');
@@ -717,8 +978,9 @@ function styleSheet(ws,colW,moneyCols,titleRows){
   titleRows.forEach((r,idx)=>{const a=XLSX.utils.encode_cell({r,c:0});
     if(ws[a])ws[a].s=idx===0?{font:{bold:true,sz:15},alignment:{horizontal:'center',vertical:'center'}}
       :{font:{sz:11,color:{rgb:'6B7280'}},alignment:{horizontal:'center',vertical:'center'}};});
-  const hr=Math.max.apply(null,titleRows)+2;   // 列头行（标题+副标题+空行之后）灰底
+  const hr=Math.max.apply(null,titleRows)+1;   // 列头行（紧跟标题/副标题）灰底
   for(let c=0;c<colW.length;c++){const cell=ws[XLSX.utils.encode_cell({r:hr,c})];if(cell)cell.s=HEADER_STYLE;}
+  ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:hr,c:0},e:{r:hr,c:colW.length-1}})};   // 列头行开筛选
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++)for(const C of moneyCols){const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];if(cell&&cell.t==='n')cell.z='"¥"#,##0.00';}
   for(let R=range.s.r;R<=range.e.r;R++){const cell=ws[XLSX.utils.encode_cell({r:R,c:0})];   // 序号列（第0列）数字居中
@@ -726,7 +988,7 @@ function styleSheet(ws,colW,moneyCols,titleRows){
   return ws;}
 function summaryAOA(){
   const gp=dataPeriod();
-  const aoa=[['客户账目汇总表'],[`${gp?gp+' · ':''}全部客户 共 ${result.customers.length} 户`],[],
+  const aoa=[['客户账目汇总表'],[`${gp?gp+' · ':''}全部客户 共 ${result.customers.length} 户`],
     ['序号','客户名','进账笔数','进账金额(元)','电子承兑笔数','电子承兑金额(元)','开票笔数','开票金额(元)','净额(进账-开票)(元)']];
   let tIn=0,tOut=0,tAc=0,tInC=0,tOutC=0,tAcC=0;
   result.customers.forEach((c,i)=>{aoa.push([i+1,c.name,c.inCount,round2(c.inSum),c.acCount,round2(c.acSum),c.outCount,round2(c.outSum),round2(c.net)]);
@@ -739,7 +1001,7 @@ function custAOA(c){
   const detRows=sortByDate(c.rows);const dated=detRows.map(r=>r.date).filter(Boolean);
   const first=dated[0]||'',last=dated[dated.length-1]||'';
   const period=first?(first===last?`${first} 对账单`:`${first} — ${last} 对账单`):'对账单';
-  const aoa=[[c.name],[period],[],['序号','日期','进账(元)','电子承兑(元)','开票(元)','差额(元)','备注']];
+  const aoa=[[c.name],[period],['序号','日期','进账(元)','电子承兑(元)','开票(元)','差额(元)','备注']];
   let run=0;
   detRows.forEach((r,i)=>{run+=r.category==='income'?r.amount:(r.category==='expense'?-r.amount:0);
     aoa.push([i+1,r.date||'',r.category==='income'?round2(r.amount):'',r.category==='accept'?round2(r.amount):'',r.category==='expense'?round2(r.amount):'',round2(run),showRemark?(r.remark||''):'']);});
@@ -755,43 +1017,48 @@ function periodTag(){const gp=dataPeriod();return gp?('_'+gp.replace(/\s*—\s*/
 function downloadAll(){const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,makeSummarySheet(),'汇总表');const used=new Set(['汇总表']);
   result.customers.forEach(c=>{XLSX.utils.book_append_sheet(wb,makeCustSheet(c),sanitizeSheet(c.name,used));});
-  XLSX.writeFile(wb,'客户账目汇总'+periodTag()+'.xlsx');}
-function downloadSummary(){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,makeSummarySheet(),'汇总表');XLSX.writeFile(wb,'客户汇总表'+periodTag()+'.xlsx');}
+  saveFrozen(wb,'客户账目汇总'+periodTag()+'.xlsx',TOOL_FREEZE);}
+const TOOL_FREEZE=3;   // 标题+副标题+列头 → 冻结前 3 行
+function downloadSummary(){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,makeSummarySheet(),'汇总表');
+  saveFrozen(wb,'客户汇总表'+periodTag()+'.xlsx',TOOL_FREEZE);}
 function downloadCurrent(){if(activeTab==='__summary__'){downloadSummary();return;}
   const c=result.customers.find(x=>x.name===activeTab);if(!c)return;
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,makeCustSheet(c),sanitizeSheet(c.name,new Set()));
-  XLSX.writeFile(wb,'客户_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx');}
+  saveFrozen(wb,'客户_'+c.name.replace(/[\/\\:*?]/g,'_')+'.xlsx',TOOL_FREEZE);}
 
 /* ============ 图片导出 ============ */
 function downloadImage(){
   const panel=document.getElementById('panelBody');if(!panel||!result){alert('请先生成汇总');return;}
   const el=panel.querySelector('.statement')||panel;const btn=document.getElementById('dlImage');
-  const old=btn.textContent;btn.textContent='生成图片中…';btn.disabled=true;el.classList.add('capturing');
+  const old=btn.innerHTML;btn.textContent='生成图片中…';btn.disabled=true;el.classList.add('capturing');
   html2canvas(el,{backgroundColor:'#ffffff',scale:2,useCORS:true,windowWidth:el.scrollWidth+40})
     .then(canvas=>{el.classList.remove('capturing');
       const label=activeTab==='__summary__'?'客户账目汇总表':('客户_'+activeTab);
       canvas.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);
         a.download=label.replace(/[\/\\:*?"<>|]/g,'_')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);});})
     .catch(err=>{el.classList.remove('capturing');alert('图片生成失败：'+err);})
-    .finally(()=>{btn.textContent=old;btn.disabled=false;});}
+    .finally(()=>{btn.innerHTML=old;btn.disabled=false;});}
 async function downloadAllImages(){
   if(!result){alert('请先生成汇总');return;}
-  const btn=document.getElementById('dlAllImages');const old=btn.textContent;btn.disabled=true;
+  const btn=document.getElementById('dlAllImages');const old=btn.innerHTML;btn.disabled=true;
   const host=document.createElement('div');host.style.cssText='position:fixed;left:-99999px;top:0;width:1200px;background:#fff;';
   document.body.appendChild(host);
   const shoot=async(html)=>{host.innerHTML=html;const el=host.querySelector('.statement');el.classList.add('capturing');
     const canvas=await html2canvas(el,{backgroundColor:'#ffffff',scale:2,useCORS:true,windowWidth:el.scrollWidth+80});
     return await new Promise(res=>canvas.toBlob(res,'image/png'));};
   const pad=n=>String(n).padStart(3,'0'),safe=s=>String(s).replace(/[\/\\:*?"<>|]/g,'_').slice(0,60);
+  const isFin=tblFmt==='fin';
   try{const zip=new JSZip();btn.textContent='汇总表…';
-    zip.file('000_客户账目汇总表.png',await shoot(summaryDocHTML(result.customers)));
+    zip.file(isFin?'000_客户汇总表.png':'000_客户账目汇总表.png',
+      await shoot(isFin?finSummaryDocHTML(result.customers):summaryDocHTML(result.customers)));
     for(let i=0;i<result.customers.length;i++){const c=result.customers[i];btn.textContent=`${i+1}/${result.customers.length}`;
-      zip.file(pad(i+1)+'_'+safe(c.name)+'.png',await shoot(statementHTML(c)));}
+      zip.file(pad(i+1)+'_'+safe(c.name)+'.png',await shoot(isFin?finStatementHTML(c):statementHTML(c)));}
     btn.textContent='打包中…';const zipBlob=await zip.generateAsync({type:'blob'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);a.download='客户对账单图片.zip';a.click();
+    const a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);
+    a.download=isFin?'客户明细表图片（财务格式）.zip':'客户对账单图片.zip';a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
   catch(err){alert('批量导出失败：'+err);}
-  finally{document.body.removeChild(host);btn.textContent=old;btn.disabled=false;}}
+  finally{document.body.removeChild(host);btn.innerHTML=old;btn.disabled=false;}}
 
 /* ============ 事件绑定 ============ */
 function bindDrop(dropId,inputId,category){
@@ -811,9 +1078,9 @@ bindDrop('dropExpense','fileExpense','expense');
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='';}));
   drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleMaster(e.dataTransfer.files[0]);});})();
 document.getElementById('genBtn').addEventListener('click',onGenerate);
-document.getElementById('dlAll').addEventListener('click',downloadAll);
-document.getElementById('dlSummary').addEventListener('click',downloadSummary);
-document.getElementById('dlCurrent').addEventListener('click',downloadCurrent);
+document.getElementById('dlAll').addEventListener('click',()=>tblFmt==='fin'?downloadFinAll():downloadAll());
+document.getElementById('dlSummary').addEventListener('click',()=>tblFmt==='fin'?downloadFinSummary():downloadSummary());
+document.getElementById('dlCurrent').addEventListener('click',()=>tblFmt==='fin'?downloadFinCurrent():downloadCurrent());
 document.getElementById('dlImage').addEventListener('click',downloadImage);
 document.getElementById('dlAllImages').addEventListener('click',downloadAllImages);
 document.getElementById('search').addEventListener('input',()=>{renderTabs();if(activeTab==='__summary__')renderPanel();});
@@ -952,7 +1219,7 @@ updateGenState();
   function payTag(){const p=payPeriod();return p?('_'+p.replace(/\s*—\s*/g,'至').replace(/\s+/g,'')):'';}
   function summaryAOA(agg,grand){
     const p=payPeriod();
-    const aoa=[['付款按对方科目 / 供应商汇总表'],[(p?p+' · ':'')+'共 '+agg.length+' 个对方科目/供应商 · 付款总额 ¥'+fmt(grand)],[],
+    const aoa=[['付款按对方科目 / 供应商汇总表'],[(p?p+' · ':'')+'共 '+agg.length+' 个对方科目/供应商 · 付款总额 ¥'+fmt(grand)],
       ['序号','对方科目 / 供应商','笔数','金额合计(元)','占比']];
     agg.forEach((g,i)=>aoa.push([i+1,g.name,g.count,round2(g.sum),(grand?(g.sum/grand*100).toFixed(1):'0.0')+'%']));
     aoa.push(['','合计',pay.rows.length,round2(grand),'100.0%']);
@@ -960,13 +1227,13 @@ updateGenState();
     return aoa;
   }
   function detailAOA(){
-    const aoa=[['付款明细'],[payPeriod()||''],[],['序号','日期','对方科目 / 摘要','金额(元)','备注']];
+    const aoa=[['付款明细'],[payPeriod()||''],['序号','日期','对方科目 / 摘要','金额(元)','备注']];
     sortRows(pay.rows).forEach((r,i)=>aoa.push([i+1,r.dateStr||'',r.name,round2(r.amount),r.remark||'']));
     aoa.push(['','','合计',round2(grandTotal()),'']);
     return aoa;
   }
   function yearAOA(){
-    const aoa=[['按年汇总'],[],['年份','笔数','金额合计(元)']];
+    const aoa=[['按年汇总'],['年份','笔数','金额合计(元)']];
     payYearAgg().forEach(y=>aoa.push([y.year,y.count,round2(y.sum)]));
     aoa.push(['合计',pay.rows.length,round2(grandTotal())]);
     return aoa;
