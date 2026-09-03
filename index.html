@@ -445,7 +445,7 @@ function renderFmtUI(){const i=tblFmt==='fin'?1:0;
 }
 window.switchFmt=f=>{tblFmt=f;
   document.querySelectorAll('#fmtSwitch .fseg').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
-  renderFmtUI();renderPanel();};
+  renderFmtUI();renderPanel();saveSession();};
 function findCol(headers,keys){for(let i=0;i<headers.length;i++){const h=String(headers[i]==null?'':headers[i]);for(const k of keys){if(h.includes(k))return i;}}return -1;}
 function analyzeSheet(aoa){
   let hr=-1;
@@ -596,7 +596,8 @@ function handleMaster(file){const reader=new FileReader();
   reader.onload=e=>{let wb;try{wb=XLSX.read(e.target.result,{type:'array'});}catch(err){alert('无法读取：'+err);return;}
     const mv=validateFile(wb,'master');if(!mv.ok){alert(mv.msg);return;}
     const ms=parseMaster(wb);if(ms.std.size===0){alert('未能识别客户名清单，请使用「下载模版」的格式。');return;}
-    store.master={fileName:file.name,std:ms.std,opening:ms.opening};renderMaster();if(result)generate();};
+    store.master={fileName:file.name,std:ms.std,opening:ms.opening,buf:e.target.result};
+    renderMaster();renderRestoreBar();saveSession();if(result)generate();};
   reader.readAsArrayBuffer(file);}
 function renderMaster(){const el=document.getElementById('masterStatus');
   if(!store.master){el.innerHTML='';return;}const m=store.master;
@@ -606,7 +607,7 @@ function renderMaster(){const el=document.getElementById('masterStatus');
     <span class="badge rows">${m.std.size} 个标准客户名</span>
     ${m.opening&&m.opening.size?`<span class="badge rows">读到 ${m.opening.size} 个期初应收</span>`:''}
     <button class="rm" onclick="removeMaster()">移除</button></div></div>`;}
-window.removeMaster=()=>{store.master=null;renderMaster();if(result)generate();};
+window.removeMaster=()=>{store.master=null;renderMaster();renderRestoreBar();saveSession();if(result)generate();};
 window.downloadNewNames=()=>{if(!result||!result.newNames.length)return;
   const aoa=[['序号','新客户名称（请补充到客户名汇总表）'],...result.newNames.map((n,i)=>[i+1,n])];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[10,42],0),'新客户名');saveFrozen(wb,'新客户名清单.xlsx');};
@@ -635,7 +636,7 @@ function generate(){
   activeTab='__summary__';renderResult();renderFmtUI();}
 
 /* ============ 收款 / 付款 双视图：生成 & 切换 ============ */
-function onGenerate(){
+function onGenerate(opts){
   const all=[...store.income,...store.accept,...store.expense];
   const recvOk=all.length>0 && all.every(e=>e.analysis.nameCol>=0&&e.analysis.amountCol>=0);
   const payHas=!!(window.payHasData&&window.payHasData());
@@ -644,7 +645,8 @@ function onGenerate(){
   setupResultSwitcher();
   const card=document.getElementById('resultCard');
   card.classList.remove('hidden');
-  card.scrollIntoView({behavior:'smooth'});
+  if(!(opts&&opts.noScroll))card.scrollIntoView({behavior:'smooth'});   // 刷新恢复时不要自动往下滚
+  saveSession();
 }
 function setupResultSwitcher(){
   const recvHas=!!result;
@@ -667,7 +669,7 @@ function showView(){
 }
 window.switchView=k=>{currentView=k;
   document.querySelectorAll('#viewSwitch .vseg').forEach(b=>b.classList.toggle('active',b.dataset.k===k));
-  showView();};
+  showView();saveSession();};
 function dataPeriod(){if(!result)return '';
   const ds=sortByDate(result.customers.flatMap(c=>c.rows)).map(r=>r.date).filter(Boolean);
   const f=ds[0]||'',l=ds[ds.length-1]||'';return f?(f===l?f:`${f} — ${l}`):'';}
@@ -700,7 +702,7 @@ function renderTabs(){
   let html=`<button class="tab ${activeTab==='__summary__'?'active':''}" onclick="switchTab('__summary__')">汇总表</button>`;
   html+=list.map(c=>`<button class="tab ${activeTab===c.name?'active':''}" onclick="switchTab('${escapeAttr(c.name)}')">${escapeHtml(c.name)}</button>`).join('');
   document.getElementById('tabs').innerHTML=html;}
-window.switchTab=name=>{activeTab=name;renderTabs();renderPanel();};
+window.switchTab=name=>{activeTab=name;renderTabs();renderPanel();saveSession();};
 function renderPanel(){const body=document.getElementById('panelBody');
   if(activeTab==='__summary__'){body.innerHTML=summaryTable();return;}
   const c=result.customers.find(x=>x.name===activeTab);
@@ -1276,13 +1278,25 @@ updateGenState();
   }
   window.paySortCol=k=>{if(pay.sortKey===k)pay.sortDir*=-1;else{pay.sortKey=k;pay.sortDir=(k==='name'?1:-1);}renderBody();};
   window.payToggleOpen=i=>{const g=pay._view[i];if(!g)return;pay.openKey=(pay.openKey===g.key)?null:g.key;renderBody();};
-  window.payRemove=()=>{pay.rows=[];pay.fileName='';pay.openKey=null;renderFile();
+  window.payRemove=()=>{pay.rows=[];pay.fileName='';pay.openKey=null;pay._buf=null;renderFile();
     document.getElementById('filePay').value='';
     if(currentView==='pay')currentView='recv';
     updateGenState();
-    if(!document.getElementById('resultCard').classList.contains('hidden'))setupResultSwitcher();};
+    if(!document.getElementById('resultCard').classList.contains('hidden'))setupResultSwitcher();
+    renderRestoreBar();saveSession();};
   window.payHasData=()=>pay.rows.length>0;
   window.payGenerate=()=>{if(pay.rows.length)render();};
+  /* ---- 会话保存/恢复 ---- */
+  window.paySnapshot=()=>(pay.rows.length&&pay._buf)
+    ?{fileName:pay.fileName,buf:pay._buf,merge:pay.merge,sortKey:pay.sortKey,sortDir:pay.sortDir}:null;
+  window.payRestore=s=>{if(!s||!s.buf)return;
+    try{const wb=XLSX.read(s.buf,{type:'array',cellDates:true});const got=extract(wb);
+      if(!got||!got.rows.length)return;
+      pay.rows=got.rows;pay.fileName=s.fileName||'';pay._buf=s.buf;pay.openKey=null;pay.q='';
+      if(typeof s.merge==='boolean')pay.merge=s.merge;
+      if(s.sortKey)pay.sortKey=s.sortKey;if(s.sortDir)pay.sortDir=s.sortDir;
+      const mg=document.getElementById('payMerge');if(mg)mg.checked=pay.merge;
+      renderFile();}catch(e){}};
 
   /* ---- 导出 Excel ---- */
   function payTag(){const p=payPeriod();return p?('_'+p.replace(/\s*—\s*/g,'至').replace(/\s+/g,'')):'';}
@@ -1353,9 +1367,9 @@ updateGenState();
       }
       const got=extract(wb);
       if(!got||!got.rows.length){alert('「付款明细」没找到有效数据。\n\n需要一张带表头的表，至少包含：\n· 「对方科目 / 摘要」列（付款给谁）\n· 「金额(元)」列\n建议表头：序号 | 年份 | 月 | 日 | 对方科目 / 摘要 | 金额(元) | 备注\n\n可点卡片里的「下载模版」看示例格式。');return;}
-      pay.rows=got.rows;pay.fileName=file.name;pay.openKey=null;pay.q='';
+      pay.rows=got.rows;pay.fileName=file.name;pay.openKey=null;pay.q='';pay._buf=e.target.result;
       const s=document.getElementById('paySearch');if(s)s.value='';
-      renderFile();updateGenState();
+      renderFile();updateGenState();renderRestoreBar();saveSession();
       // 若结果区已生成过，则实时把付款视图补进切换开关
       if(!document.getElementById('resultCard').classList.contains('hidden')){render();setupResultSwitcher();}
     };
