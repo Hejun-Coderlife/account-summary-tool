@@ -557,7 +557,7 @@ function renderFileList(){
   const box=document.getElementById('fileList');const all=[...store.income,...store.accept,...store.expense];
   if(all.length===0){box.innerHTML='';return;}
   box.innerHTML=all.map(en=>{const a=en.analysis;
-    const badge=en.category==='income'?'<span class="badge in">进账</span>'
+    const badge=en.category==='income'?'<span class="badge in">银行进账</span>'
       :en.category==='accept'?'<span class="badge ac">电子承兑</span>':'<span class="badge out">开票</span>';
     const ok=a.nameCol>=0&&a.amountCol>=0;
     const st=ok?'<span class="badge" style="background:#dcfce7;color:#15803d;">✓ 已识别</span>'
@@ -691,10 +691,10 @@ function renderResult(){
       <button class="btn ghost sm" onclick="downloadNewNames()">下载新客户名清单</button></div>`;}
   else{wb.innerHTML=`<div class="warn ok"><h4>✓ 全部 ${r.customers.length} 个客户名都在${stdLabel}中</h4></div>`;}
   document.getElementById('stats').innerHTML=`
-    <div class="stat in"><div class="k">进账合计（收入）</div><div class="v">¥${fmt(r.totalIn)}</div><div class="k">${r.inCount} 笔</div></div>
+    <div class="stat in"><div class="k">银行进账合计（收入）</div><div class="v">¥${fmt(r.totalIn)}</div><div class="k">${r.inCount} 笔</div></div>
     <div class="stat ac"><div class="k">电子承兑合计</div><div class="v">¥${fmt(r.totalAc)}</div><div class="k">${r.acCount} 笔</div></div>
     <div class="stat out"><div class="k">开票合计</div><div class="v">¥${fmt(r.totalOut)}</div><div class="k">${r.outCount} 笔</div></div>
-    <div class="stat"><div class="k">净额（进账+承兑−开票）</div><div class="v" style="color:${r.totalIn+r.totalAc-r.totalOut>=0?'var(--in)':'var(--out)'}">¥${fmt(r.totalIn+r.totalAc-r.totalOut)}</div></div>
+    <div class="stat"><div class="k">净额（银行进账+承兑−开票）</div><div class="v" style="color:${r.totalIn+r.totalAc-r.totalOut>=0?'var(--in)':'var(--out)'}">¥${fmt(r.totalIn+r.totalAc-r.totalOut)}</div></div>
     <div class="stat"><div class="k">客户数</div><div class="v">${r.customers.length}</div></div>`;
   renderTabs();renderPanel();}
 function renderTabs(){
@@ -733,8 +733,8 @@ function summaryDocHTML(rows){
   const table=`<div class="tablewrap"><table>
     <thead><tr><th class="ctr">序号</th>
       <th onclick="sortSummary('name')">客户名${arrow('name')}</th>
-      <th class="num" onclick="sortSummary('inCount')">进账笔数${arrow('inCount')}</th>
-      <th class="num" onclick="sortSummary('inSum')">进账金额${arrow('inSum')}</th>
+      <th class="num" onclick="sortSummary('inCount')">银行进账笔数${arrow('inCount')}</th>
+      <th class="num" onclick="sortSummary('inSum')">银行进账金额${arrow('inSum')}</th>
       <th class="num" onclick="sortSummary('acCount')">承兑笔数${arrow('acCount')}</th>
       <th class="num" onclick="sortSummary('acSum')">电子承兑金额${arrow('acSum')}</th>
       <th class="num" onclick="sortSummary('outCount')">开票笔数${arrow('outCount')}</th>
@@ -777,7 +777,7 @@ function statementHTML(c){
     <div class="st-sub">${escapeHtml(period)}</div>
     <div class="tablewrap"><table>
       <colgroup><col style="width:6%"><col style="width:17%"><col style="width:14%"><col style="width:15%"><col style="width:14%"><col style="width:15%"><col style="width:19%"></colgroup>
-      <thead><tr><th class="ctr">序号</th><th>日期</th><th class="num">进账</th><th class="num">电子承兑</th><th class="num">开票</th><th class="num">差额</th><th class="ctr">备注</th></tr></thead>
+      <thead><tr><th class="ctr">序号</th><th>日期</th><th class="num">银行进账</th><th class="num">电子承兑</th><th class="num">开票</th><th class="num">差额</th><th class="ctr">备注</th></tr></thead>
       <tbody>${trs}
         <tr class="total-row"><td></td><td>合计</td>
           <td class="num pos">¥${fmt(c.inSum)}</td>
@@ -785,7 +785,7 @@ function statementHTML(c){
           <td class="num neg">¥${fmt(c.outSum)}</td>
           <td class="num ${c.net>=0?'pos':'neg'}">¥${fmt(c.net)}</td><td></td></tr>
       </tbody></table></div>
-    <div class="st-note" style="font-size:11px;color:var(--muted);margin-top:6px;">注：差额 = 进账 + 电子承兑 − 开票（客户以承兑抵付货款，同样计入收款）。</div>
+    <div class="st-note" style="font-size:11px;color:var(--muted);margin-top:6px;">注：差额 = 银行进账 + 电子承兑 − 开票（客户以承兑抵付货款，同样计入收款）。</div>
     <div class="st-foot">制单人：${escapeHtml(PREPARER)}<br>制单日期：${todayCN()}</div></div>`;}
 function custDetail(c){
   const ctrl=`<div class="cust-controls"><label><input type="checkbox" ${showRemark?'checked':''} onchange="toggleRemark(this.checked)"> 显示备注列</label></div>`;
@@ -1037,8 +1037,8 @@ window.downloadTemplate=async function(cat){
     [1,2025,1,6,isIncome?'宁波示例电器有限公司':'浙江示例科技有限公司',isIncome?5984:24636,isIncome?'':'示例备注（可留空）'],
     [2,2025,1,9,'（在此填写客户/单位名称）',10000,''],
     ['（以下按行继续填写，序号可留空）','','','','','','']];
-  XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[8,8,8,6,32,16,22],0,[5]),isIncome?'进账明细':'开票明细');
-  await saveFrozen(wb,isIncome?'进账表格模版.xlsx':'开票表格模版.xlsx');};
+  XLSX.utils.book_append_sheet(wb,buildSheet(aoa,[8,8,8,6,32,16,22],0,[5]),isIncome?'银行进账明细':'开票明细');
+  await saveFrozen(wb,isIncome?'银行进账表格模版.xlsx':'开票表格模版.xlsx');};
 function styleSheet(ws,colW,moneyCols,titleRows,dataRows){
   ws['!cols']=colW.map(w=>({wch:w}));
   ws['!merges']=titleRows.map(r=>({s:{r,c:0},e:{r,c:colW.length-1}}));
@@ -1058,28 +1058,28 @@ function styleSheet(ws,colW,moneyCols,titleRows,dataRows){
 function summaryAOA(){
   const gp=dataPeriod();
   const aoa=[['客户账目汇总表'],[`${gp?gp+' · ':''}全部客户 共 ${result.customers.length} 户`],
-    ['序号','客户名','进账笔数','进账金额(元)','电子承兑笔数','电子承兑金额(元)','开票笔数','开票金额(元)','净额(进账+承兑-开票)(元)']];
+    ['序号','客户名','银行进账笔数','银行进账金额(元)','电子承兑笔数','电子承兑金额(元)','开票笔数','开票金额(元)','净额(银行进账+承兑-开票)(元)']];
   let tIn=0,tOut=0,tAc=0,tInC=0,tOutC=0,tAcC=0;
   result.customers.forEach((c,i)=>{aoa.push([i+1,c.name,c.inCount,round2(c.inSum),c.acCount,round2(c.acSum),c.outCount,round2(c.outSum),round2(c.net)]);
     tIn+=c.inSum;tOut+=c.outSum;tAc+=c.acSum;tInC+=c.inCount;tOutC+=c.outCount;tAcC+=c.acCount;});
   aoa.push(['','合计',tInC,round2(tIn),tAcC,round2(tAc),tOutC,round2(tOut),round2(tIn-tOut)]);
-  aoa.push([]);aoa.push(['','','','','','','','','注：净额=进账+电子承兑−开票']);
+  aoa.push([]);aoa.push(['','','','','','','','','注：净额=银行进账+电子承兑−开票']);
   aoa.push(['','','','','','','','','制单人：'+PREPARER]);aoa.push(['','','','','','','','','制表日期：'+todayCN()]);
   return aoa;}
 function custAOA(c){
   const detRows=sortByDate(c.rows);const dated=detRows.map(r=>r.date).filter(Boolean);
   const first=dated[0]||'',last=dated[dated.length-1]||'';
   const period=first?(first===last?`${first} 对账单`:`${first} — ${last} 对账单`):'对账单';
-  const aoa=[[c.name],[period],['序号','日期','进账(元)','电子承兑(元)','开票(元)','差额(元)','备注']];
+  const aoa=[[c.name],[period],['序号','日期','银行进账(元)','电子承兑(元)','开票(元)','差额(元)','备注']];
   let run=0;
   detRows.forEach((r,i)=>{run=round2(run+(r.category==='expense'?-r.amount:r.amount));   // 进账、电子承兑都算收到钱
     aoa.push([i+1,r.date||'',r.category==='income'?round2(r.amount):'',r.category==='accept'?round2(r.amount):'',r.category==='expense'?round2(r.amount):'',round2(run),showRemark?(r.remark||''):'']);});
   aoa.push(['','合计',round2(c.inSum),round2(c.acSum),round2(c.outSum),round2(c.net),'']);
-  aoa.push([]);aoa.push(['注：差额=进账+电子承兑−开票']);
+  aoa.push([]);aoa.push(['注：差额=银行进账+电子承兑−开票']);
   aoa.push(['制单人：'+PREPARER]);aoa.push(['制单日期：'+todayCN()]);
   return aoa;}
-function makeSummarySheet(){return styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA()),[6,32,9,14,10,15,9,14,17],[3,5,7,8],[0,1],result.customers.length);}
-function makeCustSheet(c){return styleSheet(XLSX.utils.aoa_to_sheet(custAOA(c)),[6,15,13,14,13,13,30],[2,3,4,5],[0,1],c.rows.length);}
+function makeSummarySheet(){return styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA()),[6,32,13,17,10,15,9,14,17],[3,5,7,8],[0,1],result.customers.length);}
+function makeCustSheet(c){return styleSheet(XLSX.utils.aoa_to_sheet(custAOA(c)),[6,15,15,14,13,13,30],[2,3,4,5],[0,1],c.rows.length);}
 function sanitizeSheet(name,used){let s=String(name).replace(/[\[\]\*\?\/\\\:]/g,'_').slice(0,28)||'客户';
   let base=s,i=1;while(used.has(s)){s=base.slice(0,25)+'_'+(i++);}used.add(s);return s;}
 function periodTag(){const gp=dataPeriod();return gp?('_'+gp.replace(/\s*—\s*/g,'至').replace(/\s+/g,'')):'';}
