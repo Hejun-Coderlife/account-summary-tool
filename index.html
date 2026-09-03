@@ -1072,10 +1072,10 @@ function custAOA(c){
   const period=first?(first===last?`${first} 对账单`:`${first} — ${last} 对账单`):'对账单';
   const aoa=[[c.name],[period],['序号','日期','进账(元)','电子承兑(元)','开票(元)','差额(元)','备注']];
   let run=0;
-  detRows.forEach((r,i)=>{run+=r.category==='income'?r.amount:(r.category==='expense'?-r.amount:0);
+  detRows.forEach((r,i)=>{run=round2(run+(r.category==='expense'?-r.amount:r.amount));   // 进账、电子承兑都算收到钱
     aoa.push([i+1,r.date||'',r.category==='income'?round2(r.amount):'',r.category==='accept'?round2(r.amount):'',r.category==='expense'?round2(r.amount):'',round2(run),showRemark?(r.remark||''):'']);});
   aoa.push(['','合计',round2(c.inSum),round2(c.acSum),round2(c.outSum),round2(c.net),'']);
-  aoa.push([]);aoa.push(['注：差额=进账−开票，电子承兑仅登记不计入差额']);
+  aoa.push([]);aoa.push(['注：差额=进账+电子承兑−开票']);
   aoa.push(['制单人：'+PREPARER]);aoa.push(['制单日期：'+todayCN()]);
   return aoa;}
 function makeSummarySheet(){return styleSheet(XLSX.utils.aoa_to_sheet(summaryAOA()),[6,32,9,14,10,15,9,14,17],[3,5,7,8],[0,1],result.customers.length);}
