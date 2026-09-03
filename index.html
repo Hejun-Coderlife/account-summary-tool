@@ -273,6 +273,7 @@
         <input type="file" id="filePay" accept=".xlsx,.xls,.csv" class="hidden">
       </div>
     </div>
+    <div id="restoreBar"></div>
     <div id="masterStatus"></div>
     <div class="filelist" id="fileList"></div>
     <div id="payFileStatus"></div>
@@ -343,6 +344,69 @@ let tblFmt='tool';        // 表格格式：tool=工具自有格式 / fin=财务
 const openingManual=new Map();
 try{const _o=JSON.parse(localStorage.getItem('acct_opening_v1')||'{}');
   Object.keys(_o).forEach(k=>openingManual.set(k,Number(_o[k])||0));}catch(e){}
+
+/* ============ 会话保存：刷新/关页后数据不丢 ============
+   上传的文件原始内容存在本机浏览器的 IndexedDB 里，下次打开自动恢复。
+   仍然是纯本地，不上传服务器。点「清空数据」可彻底删掉。          */
+const SDB='acct_session_v1',SKEY='session';
+function _idb(){return new Promise((res,rej)=>{const r=indexedDB.open(SDB,1);
+  r.onupgradeneeded=()=>{r.result.createObjectStore('kv');};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function _idbDo(mode,fn){return _idb().then(db=>new Promise((res,rej)=>{
+  const t=db.transaction('kv',mode),o=t.objectStore('kv');let out;
+  out=fn(o);t.oncomplete=()=>res(out&&out.result!==undefined?out.result:out);t.onerror=()=>rej(t.error);}));}
+const idbSet=(k,v)=>_idbDo('readwrite',o=>o.put(v,k));
+const idbGet=k=>_idbDo('readonly',o=>o.get(k));
+const idbDel=k=>_idbDo('readwrite',o=>o.delete(k));
+
+let _sessionReady=false;          // 恢复完成前不写盘，避免空状态覆盖旧数据
+function sessionSnapshot(){
+  const pack=e=>({id:e.id,name:e.name,category:e.category,selectedSheet:e.selectedSheet,analysis:e.analysis,buf:e.buf});
+  return {v:1,ts:Date.now(),
+    income:store.income.filter(e=>e.buf).map(pack),
+    accept:store.accept.filter(e=>e.buf).map(pack),
+    expense:store.expense.filter(e=>e.buf).map(pack),
+    master:(store.master&&store.master.buf)?{fileName:store.master.fileName,buf:store.master.buf}:null,
+    pay:(window.paySnapshot?window.paySnapshot():null),
+    ui:{currentView,tblFmt,showRemark,activeTab,generated:!!(result||(window.payHasData&&window.payHasData()))}};}
+let _saveTimer=null;
+function saveSession(){if(!_sessionReady)return;clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{try{idbSet(SKEY,sessionSnapshot()).catch(()=>{});}catch(e){}},250);}
+window.clearSession=()=>{
+  if(!confirm('确定清空已上传的全部数据吗？\n\n清空后本页会刷新成空白状态，需要重新上传表格。'))return;
+  idbDel(SKEY).catch(()=>{}).then(()=>location.reload());};
+function renderRestoreBar(ts){
+  const el=document.getElementById('restoreBar');if(!el)return;
+  const has=store.income.length||store.accept.length||store.expense.length||store.master||(window.payHasData&&window.payHasData());
+  if(!has){el.innerHTML='';return;}
+  const t=ts?new Date(ts):null;
+  const when=t?`${t.getFullYear()}年${t.getMonth()+1}月${t.getDate()}日 ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`:'';
+  el.innerHTML=`<div class="fitem" style="margin-bottom:12px;"><div class="fhead">
+    <span class="badge" style="background:#dbeafe;color:#1d4ed8;">已恢复上次数据</span>
+    <span class="fname" style="font-weight:400;">${when?'保存于 '+when+'　·　':''}刷新或关掉网页都不会丢，数据只存在本机浏览器</span>
+    <button class="rm" onclick="clearSession()">清空数据</button></div></div>`;}
+async function restoreSession(){
+  let s=null;try{s=await idbGet(SKEY);}catch(e){}
+  if(s&&s.v===1){
+    ['income','accept','expense'].forEach(cat=>{(s[cat]||[]).forEach(p=>{
+      try{const wb=XLSX.read(p.buf,{type:'array',cellDates:true});
+        store[cat].push({id:p.id,name:p.name,category:cat,wb,selectedSheet:p.selectedSheet,analysis:p.analysis,buf:p.buf});
+      }catch(e){}});});
+    if(s.master&&s.master.buf){try{const wb=XLSX.read(s.master.buf,{type:'array'});const ms=parseMaster(wb);
+      if(ms.std.size)store.master={fileName:s.master.fileName,std:ms.std,opening:ms.opening,buf:s.master.buf};}catch(e){}}
+    if(s.pay&&window.payRestore)window.payRestore(s.pay);
+    if(s.ui){currentView=s.ui.currentView||'recv';tblFmt=s.ui.tblFmt||'tool';showRemark=s.ui.showRemark!==false;}
+    renderFileList();renderMaster();renderFmtUI();updateGenState();renderRestoreBar(s.ts);
+    document.querySelectorAll('#fmtSwitch .fseg').forEach(b=>b.classList.toggle('active',b.dataset.f===tblFmt));
+    if(s.ui&&s.ui.generated&&!document.getElementById('genBtn').disabled){
+      onGenerate({noScroll:true});
+      if(s.ui.activeTab&&result&&(s.ui.activeTab==='__summary__'||result.customers.some(c=>c.name===s.ui.activeTab))){
+        activeTab=s.ui.activeTab;renderResult();}
+    }
+  }
+  _sessionReady=true;}
+window.addEventListener('beforeunload',()=>{if(_sessionReady){clearTimeout(_saveTimer);
+  try{idbSet(SKEY,sessionSnapshot());}catch(e){}}});
 
 const NAME_KEYS=['户名','单位','名称','客户','对方','付款','收款','公司','厂','客商','往来'];
 const AMT_KEYS=['金额','交易金额','发生额','收入','支出','价税','合计','元','款'];
@@ -478,16 +542,16 @@ function handleFiles(fileList,category){
     reader.onload=e=>{let wb;try{wb=XLSX.read(e.target.result,{type:'array',cellDates:true});}catch(err){alert('无法读取文件：'+file.name+'\n'+err);return;}
       const v=validateFile(wb,category);if(!v.ok){alert(v.msg);return;}
       if(category==='accept'){const p=pickAcceptSheet(wb);
-        const entry={id:'f'+Math.random().toString(36).slice(2,9),name:file.name,category,wb,
+        const entry={id:'f'+Math.random().toString(36).slice(2,9),name:file.name,category,wb,buf:e.target.result,
           selectedSheet:p?p.name:wb.SheetNames[0],
           analysis:{headerRow:0,headers:[],nameCol:AC_NAME_C,amountCol:AC_AMT_C,yearCol:-1,monthCol:-1,dateCol:AC_DATE_C,remarkCol:AC_NO_C,dataRows:p?p.rows:0}};
-        store.accept.push(entry);renderFileList();updateGenState();return;}
+        store.accept.push(entry);renderFileList();updateGenState();renderRestoreBar();saveSession();return;}
       const picked=pickBestSheet(wb);
-      const entry={id:'f'+Math.random().toString(36).slice(2,9),name:file.name,category,wb,
+      const entry={id:'f'+Math.random().toString(36).slice(2,9),name:file.name,category,wb,buf:e.target.result,
         selectedSheet:picked?picked.name:wb.SheetNames[0],analysis:picked?picked.analysis:null};
       if(!entry.analysis){const aoa=XLSX.utils.sheet_to_json(wb.Sheets[entry.selectedSheet],{header:1,defval:''});
         entry.analysis=analyzeSheet(aoa)||{headerRow:0,headers:aoa[0]||[],nameCol:-1,amountCol:-1,yearCol:-1,monthCol:-1,dateCol:-1,remarkCol:-1,dataRows:0};}
-      store[category].push(entry);renderFileList();updateGenState();};
+      store[category].push(entry);renderFileList();updateGenState();renderRestoreBar();saveSession();};
     reader.readAsArrayBuffer(file);});}
 function renderFileList(){
   const box=document.getElementById('fileList');const all=[...store.income,...store.accept,...store.expense];
@@ -502,7 +566,7 @@ function renderFileList(){
       <span class="fname">${escapeHtml(en.name)}</span>
       <span class="badge rows">${a.dataRows||0} 行数据</span>${st}
       <button class="rm" onclick="removeFile('${en.id}')">移除</button></div></div>`;}).join('');}
-window.removeFile=id=>{store.income=store.income.filter(e=>e.id!==id);store.accept=store.accept.filter(e=>e.id!==id);store.expense=store.expense.filter(e=>e.id!==id);renderFileList();updateGenState();};
+window.removeFile=id=>{store.income=store.income.filter(e=>e.id!==id);store.accept=store.accept.filter(e=>e.id!==id);store.expense=store.expense.filter(e=>e.id!==id);renderFileList();updateGenState();renderRestoreBar();saveSession();};
 function updateGenState(){
   const all=[...store.income,...store.accept,...store.expense];
   const recvHas=all.length>0;
