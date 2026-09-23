@@ -3,23 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>客户账目汇总工具</title>
+<title>慧颖账目汇总工具</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%236aa8ff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%238b5cf6%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M13.5%204.8%20L14.1%201.1%20L17.9%201.1%20L18.5%204.8%20L22.2%206.3%20L25.2%204.1%20L27.9%206.8%20L25.7%209.8%20L27.2%2013.5%20L30.9%2014.1%20L30.9%2017.9%20L27.2%2018.5%20L25.7%2022.2%20L27.9%2025.2%20L25.2%2027.9%20L22.2%2025.7%20L18.5%2027.2%20L17.9%2030.9%20L14.1%2030.9%20L13.5%2027.2%20L9.8%2025.7%20L6.8%2027.9%20L4.1%2025.2%20L6.3%2022.2%20L4.8%2018.5%20L1.1%2017.9%20L1.1%2014.1%20L4.8%2013.5%20L6.3%209.8%20L4.1%206.8%20L6.8%204.1%20L9.8%206.3%20Z%22%20fill%3D%22url%28%23g%29%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%226.5%22%20fill%3D%22%230d1030%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%222.6%22%20fill%3D%22url%28%23g%29%22%2F%3E%3C%2Fsvg%3E">
 <script src="xlsx.full.min.js"></script>
 <script src="html2canvas.min.js"></script>
 <script src="jszip.min.js"></script>
 <style>
   :root{
-    --bg:#f5f7fc; --panel:#ffffff; --ink:#1f2540; --muted:#6b7395;
-    --line:#e0e5ee; --brand:#0284c7; --brand-d:#334155; --accent:#0ea5e9;
-    --in:#0e9c6d; --in-bg:#e9faf3; --out:#e5484d; --out-bg:#fdecec;
-    --ac:#4457c9; --ac-bg:#eaedfb;
-    --shadow:0 1px 3px rgba(30,40,70,.05),0 14px 36px rgba(51,65,85,.10);
+    --hd:50px;
+    /* 全站只用三个颜色：主蓝(交互) + 收绿 + 支红，其余一律石板灰 */
+    --bg:#e9edf2; --panel:#ffffff; --ink:#111a2b; --muted:#667487;
+    --line:#d3dae4; --line-s:#b9c3d1;
+    --brand:#0d6f9e; --brand-d:#0d2135; --accent:#0ea5e9;
+    --in:#0b7a5a; --in-bg:#e8f2ee; --out:#b8342f; --out-bg:#f8eceb;
+    --ac:#0d6f9e; --ac-bg:#e6eff5;          /* 承兑并进主蓝，不再单独一个紫 */
+    --steel:#3b4a5e; --steel-bg:#eef1f5;    /* 工业灰，替掉原来的橙/紫/青 */
+    --shadow:0 1px 2px rgba(17,26,43,.07);
+    --r:4px;                                 /* 统一小圆角，硬朗一点 */
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
     color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh;
-    background:radial-gradient(125% 90% at 50% 0%, #eef2f8 0%, #e6ebf4 65%, #dfe5f0 100%);background-attachment:fixed;}
+    padding-top:var(--hd);transition:padding-top .22s ease;
+    /* 工程图纸感：冷灰底 + 极淡网格 */
+    background:
+      linear-gradient(rgba(96,116,142,.07) 1px,transparent 1px) 0 0/30px 30px,
+      linear-gradient(90deg,rgba(96,116,142,.07) 1px,transparent 1px) 0 0/30px 30px,
+      var(--bg);
+    background-attachment:fixed;}
+  /* 金额、笔数一律等宽，对齐成仪表盘 */
+  .stat .v,.badge.rows,td,th,.fitem .badge{font-variant-numeric:tabular-nums;}
   .cornerL,.cornerR{position:fixed;bottom:0;z-index:-1;pointer-events:none;width:0;height:0;}
   .cornerL{left:0;} .cornerR{right:0;}
   .cg{position:absolute;transform-origin:center;display:block;opacity:.5;}
@@ -28,98 +42,278 @@
   .cornerL .cg.big{left:-190px;} .cornerL .cg.small{left:118px;}
   .cornerR .cg.big{right:-190px;} .cornerR .cg.small{right:118px;}
   @media(max-width:640px){.cg.big{width:280px;height:280px;bottom:-140px;}.cornerL .cg.big{left:-140px;}.cornerR .cg.big{right:-140px;}.cg.small{width:120px;height:120px;}}
-  header.top{position:relative;overflow:hidden;color:#1f2540;padding:22px 28px 22px;text-align:center;background:#eaeef4;
-    box-shadow:0 8px 26px rgba(51,65,85,.12);}
-  #hdr{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;}
-  header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;z-index:1;
-    background:linear-gradient(90deg,rgba(120,150,220,0),rgba(120,150,220,.55),rgba(120,150,220,0));}
-  .brand{position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;gap:13px;}
-  .logo{width:50px;height:50px;flex:none;display:block;filter:drop-shadow(0 2px 7px rgba(51,90,150,.35));animation:logoPulse 3.4s ease-in-out infinite;}
+  header.top{position:fixed;left:0;right:0;top:0;z-index:60;cursor:pointer;transition:transform .22s ease;overflow:hidden;color:#fff;padding:6px 20px;text-align:center;
+    background:#1b1a3d;   /* 画布没起来时的兜底底色 */
+    box-shadow:0 8px 26px rgba(14,11,33,.28);}
+  /* 光轨画布：必须脱离文档流，否则会被当成 flex/block 子元素把标题栏撑高 */
+  header.top.hd-hide{transform:translateY(-100%);}
+  /* 标题栏收起后，页面最顶留一条 14px 的窄条，点一下把它放回来 */
+  #hdPeek{display:none;}
+  .hd-off #hdPeek{display:block;position:fixed;left:0;right:0;top:0;height:14px;z-index:59;cursor:pointer;}
+  .hd-off #hdPeek::after{content:"";position:absolute;left:0;right:0;top:0;height:100%;
+    background:linear-gradient(180deg,rgba(13,33,53,.20),rgba(13,33,53,0));
+    opacity:0;transition:opacity .14s;}
+  .hd-off #hdPeek:hover::after{opacity:1;}
+  .fx-hd{position:absolute!important;inset:0;width:100%!important;height:100%!important;
+    z-index:0;display:block;pointer-events:none;flex:none;}
+  header.top > *:not(.fx-hd){position:relative;z-index:2;}
+  header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;z-index:3;
+    background:linear-gradient(90deg,transparent,#38bdf8,#6366f1,#e074b4,transparent);opacity:.85;}
+  .brand{position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;gap:9px;}
+  .logo{height:38px;width:auto;flex:none;display:block;line-height:0;filter:drop-shadow(0 2px 7px rgba(51,90,150,.35));animation:logoPulse 3.4s ease-in-out infinite;}
   @keyframes logoPulse{0%,100%{filter:drop-shadow(0 2px 5px rgba(99,102,241,.3));}50%{filter:drop-shadow(0 2px 9px rgba(80,110,200,.5));}}
+  .logo svg{height:38px;width:auto;display:block;}
   .gear{transform-box:fill-box;transform-origin:center;}
   .gspin{animation:gspin 9s linear infinite;}
   .gspinr{animation:gspin 6s linear infinite reverse;}
   @keyframes gspin{to{transform:rotate(360deg);}}
-  .ttl{text-align:left;line-height:1;}
-  .brand h1{margin:0;font-size:26px;font-weight:800;letter-spacing:2px;line-height:1.1;
-    background:linear-gradient(92deg,#334155,#475569,#0284c7);-webkit-background-clip:text;background-clip:text;color:transparent;
-    filter:drop-shadow(0 1px 8px rgba(51,65,85,.22));}
-  .tsub{font-size:10px;letter-spacing:4px;color:#6a7690;margin-top:6px;font-weight:700;}
-  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 90px;}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px;margin-bottom:20px;}
+  .ttl{text-align:left;line-height:1;display:flex;align-items:baseline;gap:10px;}
+  .brand h1{margin:0;font-size:30px;white-space:nowrap;font-weight:800;letter-spacing:2px;line-height:1.16;
+    background:linear-gradient(100deg,#eaf4ff 0%,#ffffff 30%,#a8dcff 52%,#ffd9a8 72%,#ffffff 90%,#eaf4ff 100%);
+    background-size:280% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-fill-color:transparent;animation:brandflow 7s linear infinite;}
+  @keyframes brandflow{to{background-position:280% 0;}}
+  .tsub{font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.72);margin:0;font-weight:700;white-space:nowrap;}
+  @media(prefers-reduced-motion:reduce){.brand h1{animation:none;}}
+  .wrap{max-width:none;margin:0;padding:16px 26px 72px;}
+  /* ===== 左右分栏：左边上传入口常驻，右边文件列表 + 结果表 ===== */
+  .layout{display:grid;grid-template-columns:318px minmax(0,1fr);gap:16px;align-items:start;}
+  /* 左栏吸顶：不跟着页面滚动；内容太长时左栏自己滚 */
+  .side{position:sticky;top:calc(var(--hd) + 12px);max-height:calc(100vh - var(--hd) - 24px);
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+    z-index:30;}   /* sticky 自成层叠上下文，不给 z-index 会被右边的结果卡盖住 */
+  .side::-webkit-scrollbar{width:6px;}
+  .side::-webkit-scrollbar-thumb{background:#d3dae8;border-radius:3px;}
+  .side .card{margin-bottom:0;padding-top:0;}
+  /* 左栏内部滚动时，分区标题钉在栏顶；card 的上内边距挪进标题自己的 padding，
+     否则会在标题上方留一道缝，内容从缝里滑过去 */
+  .side .sect-h{position:sticky;top:0;z-index:6;background:var(--panel);padding-top:14px;}
+  .main{min-width:0;}          /* 关键：不写 min-width:0 时宽表格会把左栏挤扁 */
+  /* 已传文件列表现在在左栏里，窄，所以各行竖排 */
+  /* 统一用 sidefiles 的 gap 控间距，把各条目自带的 margin 清零 */
+  .sidefiles{display:flex;flex-direction:column;gap:5px;}
+  .sidefiles > div:empty{display:none;}   /* 空的占位 div 别占 gap */
+  .sidefiles:has(.fitem){margin-top:12px;}
+  .sidefiles .fitem{margin:0!important;}
+  .side .filelist{margin-top:0;gap:5px;}
+  .side .fitem{padding:6px 9px;}
+  .side .fitem .fhead{gap:5px 7px;}
+  .side .fitem .fname{min-width:0;flex:1 1 100%;font-size:12.5px;font-weight:600;}
+  .side .fitem .badge{font-size:10.5px;padding:1px 6px;}
+  .side .fitem .rm{padding:0 2px;font-size:11.5px;}
+  /* 新客户名提示也在左栏，窄，所以压缩排版 */
+  .side #warnBox:not(:empty){margin-top:12px;}
+  .side .warn{padding:11px 12px;margin-bottom:0;border-radius:10px;}
+  .side .warn h4{font-size:13px;line-height:1.5;}
+  .side .warn>div{font-size:12px;line-height:1.6;}
+  .side .warn .names{gap:5px;margin:8px 0;max-height:150px;}
+  .side .warn .chip{font-size:11.5px;padding:2px 7px;word-break:break-all;}
+  .side .warn-how{padding:9px 10px;margin:9px 0;font-size:11.5px;line-height:1.7;}
+  .side .warn .btn.ghost{width:100%;padding:7px 10px;font-size:12.5px;}
+  /* 恢复条放左栏最下面，整块窄条 */
+  .side #restoreBar{margin-top:10px;}
+  .side #restoreBar .fitem{margin-bottom:0!important;padding:7px 9px;background:var(--steel-bg);}
+  .side #restoreBar .fname{font-size:11.5px;line-height:1.45;color:var(--muted);}
+  /* 结果表铺满右栏，两边不留空 */
+  .main .statement{max-width:none!important;margin:0;
+    border:0;border-radius:0;padding:0;background:transparent;}
+  .main #panelBody{padding-top:0;}
+  .main .tablewrap{margin-top:0;}          /* 页签和表头之间那条空白 */
+  /* 右栏顶部别占太高，把地方让给表格 */
+  .main #resultCard{padding:12px 16px 14px;}
+  .main .viewswitch{margin-bottom:10px;}
+  /* 5 个统计从竖排大卡压成一行窄条 */
+  .main .stats{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+  .main .stat{display:flex;align-items:baseline;gap:7px;padding:5px 11px;border-radius:var(--r);
+    border-left:3px solid var(--line-s);}
+  .main .stat.in{border-left-color:var(--in);}
+  .main .stat.out{border-left-color:var(--out);}
+  .main .stat.ac{border-left-color:var(--ac);}
+  .main .stat .k{font-size:11px;white-space:nowrap;}
+  .main .stat .v{font-size:15px;margin-top:0;white-space:nowrap;}
+  /* 格式切换 + 下载按钮 + 搜索框并成一行 */
+  .ctrlrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px;}
+  .ctrlrow .fmtswitch{margin:0;}
+  .ctrlrow .toolbar{flex:1;min-width:0;margin:0;}
+  .main .btn{padding:8px 13px;font-size:13px;}
+  .main .tab{padding:7px 12px;}
+  .empty-note{border:1px dashed var(--line-s);border-radius:var(--r);padding:52px 20px;text-align:center;
+    color:var(--muted);font-size:13px;background:rgba(255,255,255,.5);letter-spacing:.5px;}
+  /* 有文件或已出结果时，占位提示自动消失 */
+  .main:has(#resultCard:not(.hidden)) .empty-note{display:none;}
+  /* 左栏里 5 个入口改成竖排，每个入口横向排布：图标 | 名称+提示 | 模版 */
+  .side .drop-row{display:flex;flex-direction:column;gap:7px;}
+  .side .drop{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"ico tag tpl" "ico act tpl";
+    align-items:center;gap:0 10px;text-align:left;padding:9px 11px;}
+  .side .drop .drop-ico{grid-area:ico;margin:0;width:22px;height:22px;}
+  .side .drop.master .drop-ico{width:22px;height:22px;}
+  .side .drop .tag{grid-area:tag;margin:0;justify-self:start;}
+  .side .drop .act{grid-area:act;font-size:11px;color:var(--muted);font-weight:500;}
+  .side .drop.master .act{font-size:11px;}
+  .side .drop .tpl-link{grid-area:tpl;margin:0;align-self:center;}
+  /* ===== 宽屏：整页不滚，统计条/工具栏/页签全部冻结，只有表格内部滚 ===== */
+  @media(min-width:1101px){
+    html,body{height:100%;}
+    body{overflow:hidden;}
+    .wrap{height:calc(100vh - var(--hd));padding-bottom:14px;display:flex;flex-direction:column;min-height:0;}
+    .layout{flex:1;min-height:0;}
+    .foot{flex:none;margin-top:10px;}
+    .main{height:100%;display:flex;flex-direction:column;min-height:0;}
+    .main #resultCard{flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0;}
+    .main #resultCard>*{flex:none;}
+    .main #viewRecv{flex:1;min-height:0;display:flex;flex-direction:column;}
+    .main #viewRecv>*{flex:none;}
+    .main #panelBody{flex:1;min-height:0;display:flex;flex-direction:column;}
+    .main #panelBody>.statement{flex:1;min-height:0;display:flex;flex-direction:column;}
+    .main .tablewrap{flex:1;min-height:0;max-height:none;}
+    .main #viewPay{flex:1;min-height:0;overflow:auto;}
+  }
+  /* 导出图片时把上面这套 flex 拆掉，否则截出来会被裁 */
+  .capturing.statement,.capturing .statement{display:block!important;height:auto!important;flex:none!important;}
+  .capturing .tablewrap{flex:none!important;}
+
+  @media(max-width:1100px){
+    .layout,.layout.side-hid{grid-template-columns:1fr;}
+    .side{position:static;max-height:none;overflow:visible;}
+    .side .drop-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;}
+    .side .fitem .fname{flex:1;min-width:180px;}
+  }
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:16px;}
   .card h2{margin:0 0 4px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
   .card .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
-  .step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#475569,#0ea5e9);color:#fff;
-    font-size:12px;align-items:center;justify-content:center;font-weight:600;box-shadow:0 3px 8px rgba(51,65,85,.30);}
-  .drop-row{display:grid;grid-template-columns:1fr 1fr 1fr .82fr 1fr;gap:14px;align-items:stretch;}
+  .step{display:inline-flex;width:20px;height:20px;border-radius:2px;background:var(--brand-d);color:#fff;
+    font-family:var(--mono);font-size:12px;align-items:center;justify-content:center;font-weight:700;}
+  .card h2{letter-spacing:.5px;}
+  /* 分区标题：左侧实心竖条 + 中文标题 + 等宽英文副标，底下一条深色短线压住 */
+  .sect-h{position:relative;display:flex;align-items:center;gap:10px;
+    padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--line);}
+  .sect-h::after{content:"";position:absolute;left:0;bottom:-1px;width:48px;height:2px;background:var(--brand-d);}
+  .sect-bar{width:3px;height:28px;background:var(--brand-d);flex:none;}
+  .sect-t{font-size:15px;font-weight:800;letter-spacing:3px;line-height:1.1;color:var(--ink);}
+  .sect-s{font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;color:var(--muted);margin-top:4px;}
+  .sect-txt{flex:1;min-width:0;}
+  .sect-tog{flex:none;width:26px;height:26px;padding:0;position:relative;border:1px solid var(--line-s);border-radius:2px;
+    background:#fff;color:var(--steel);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .sect-tog svg{width:15px;height:15px;transition:transform .2s;}
+  .sect-tog:hover{border-color:var(--brand);color:var(--brand);}
+  .side-hid .sect-tog{width:48px;height:32px;}
+  .side-hid .sect-tog svg{width:18px;height:18px;transform:rotate(180deg);}
+  /* 悬停提示：浏览器自带 title 要等 1 秒还丑，自己画一个，0.1 秒淡入 */
+  .side-hid .rail-tip{position:relative;}
+  .side-hid .rail-tip::after{content:attr(data-lbl);position:absolute;left:calc(100% + 12px);top:50%;
+    transform:translateY(-50%);background:var(--brand-d);color:#fff;font-size:12.5px;font-weight:600;
+    letter-spacing:.5px;padding:6px 11px;border-radius:2px;white-space:nowrap;z-index:70;
+    box-shadow:0 4px 14px rgba(13,33,53,.35);
+    opacity:0;visibility:hidden;transition:opacity .1s;pointer-events:none;}
+  .side-hid .rail-tip::before{content:"";position:absolute;left:calc(100% + 4px);top:50%;
+    transform:translateY(-50%);border:5px solid transparent;border-right-color:var(--brand-d);z-index:70;
+    opacity:0;visibility:hidden;transition:opacity .1s;pointer-events:none;}
+  .side-hid .rail-tip:hover::after,.side-hid .rail-tip:hover::before{opacity:1;visibility:visible;}
+  /* 折叠：整个左栏往左收成一条 52px 的图标条，表格吃掉腾出来的宽度 */
+  .layout.side-hid{grid-template-columns:62px minmax(0,1fr);}
+  .side-hid .side{overflow:visible;}      /* 不设 visible 悬停提示会被裁掉 */
+  .side-hid .side .card{padding:9px 6px;}
+  .side-hid .sect-h{justify-content:center;padding-bottom:8px;margin-bottom:8px;}
+  .side-hid .sect-h::after{display:none;}
+  .side-hid .sect-bar,.side-hid .sect-txt{display:none;}
+  .side-hid .drop-row{display:flex;flex-direction:column;gap:6px;}
+  .side-hid .drop{width:48px;height:44px;padding:0;margin:0 auto;border-left-width:1px;
+    display:flex;align-items:center;justify-content:center;}
+  .side-hid .drop.pay{border-left-width:3px;}
+  .side-hid .drop .tag,.side-hid .drop .act,.side-hid .drop .tpl-link{display:none;}
+  .side-hid .drop .drop-ico{margin:0;width:23px;height:23px;}
+  /* 文件列表、提示、恢复条整块收掉，只留图标 */
+  .side-hid .sidefiles,.side-hid #warnBox,.side-hid #restoreBar,.side-hid #genHint{display:none;}
+  .side-hid .genwrap{margin-top:8px!important;padding-top:8px!important;}
+  .side-hid #genBtn{width:48px!important;height:44px;padding:0;margin:0 auto;}
+  .side-hid #genBtn::before,.side-hid #genBtn::after{display:none;}   /* 小方块上不用灯轨 */
+  .side-hid #genBtn .bico{width:21px;height:21px;}
+  .side-hid #genBtn .blbl{display:none;}
+  .drop-row{display:grid;grid-template-columns:1fr 1fr 1fr .82fr 1fr;gap:10px;align-items:stretch;}
   @media(max-width:1040px){.drop-row{grid-template-columns:1fr 1fr 1fr;}}
   @media(max-width:760px){.drop-row{grid-template-columns:1fr 1fr;}}
   @media(max-width:520px){.drop-row{grid-template-columns:1fr;}}
-  .drop{border:1.5px solid var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:.15s;background:#f5f7fb;}
-  .drop:hover{border-color:var(--brand);background:#eef3fb;}
-  .drop.master{padding:18px 14px;background:#f5f7fb;}
-  .drop .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;margin-bottom:8px;}
-  .drop.income .tag{background:#e6edf6;color:#334155;}
-  .drop.accept .tag{background:var(--ac-bg);color:var(--ac);}
-  .drop.expense .tag{background:#fbeede;color:#b45309;}
-  .drop.master .tag{background:#e0f0fb;color:#0284c7;}
-  .drop-ico{width:32px;height:32px;display:block;margin:2px auto 10px;}
-  .drop.income .drop-ico{color:#334155;}
-  .drop.accept .drop-ico{color:var(--ac);}
-  .drop.expense .drop-ico{color:#b45309;}
-  .drop.master .drop-ico{color:#0284c7;width:28px;height:28px;}
-  .act{font-size:13.5px;font-weight:600;color:var(--ink);}
-  .drop.master .act{font-size:12px;}
-  .tpl-link{display:inline-block;margin-top:10px;font-size:12.5px;color:var(--brand);border:1px solid var(--line);
-    background:#fff;border-radius:7px;padding:4px 12px;cursor:pointer;}
-  .tpl-link:hover{border-color:var(--brand);background:#f0f6ff;}
-  .filelist{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
-  .fitem{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fbfcff;}
+  .drop{border:1px solid var(--line);border-left:3px solid var(--line-s);border-radius:var(--r);
+    padding:9px 12px 10px;text-align:center;cursor:pointer;transition:.12s;background:var(--steel-bg);}
+  .drop:hover{border-color:var(--brand);border-left-color:var(--brand);background:#e7eef4;}
+  .drop.master{padding:9px 10px 10px;}
+  .drop .tag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:2px;margin-bottom:5px;
+    background:#dfe5ec;color:var(--steel);letter-spacing:.3px;}
+  .drop-ico{width:22px;height:22px;display:block;margin:1px auto 5px;color:var(--steel);}
+  .drop.master .drop-ico{width:20px;height:20px;}
+  /* 只有「付款明细」是出账，用支出红的细边区分，其余四个同色 */
+  .drop.pay{border-left-color:var(--out);}
+  .act{font-size:12.5px;font-weight:600;color:var(--ink);}
+  .drop.master .act{font-size:11.5px;}
+  .tpl-link{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--muted);border:1px solid var(--line-s);
+    background:#fff;border-radius:2px;padding:2px 10px;cursor:pointer;}
+  .tpl-link:hover{border-color:var(--brand);color:var(--brand);}
+  .filelist{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .fitem{border:1px solid var(--line);border-left:3px solid var(--line-s);border-radius:var(--r);padding:6px 12px;background:#fafbfd;}
   .fitem .fhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .fitem .fname{font-weight:600;font-size:13.5px;flex:1;min-width:180px;word-break:break-all;}
-  .badge{font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600;}
-  .badge.in{background:var(--in-bg);color:var(--in);}
-  .badge.ac{background:var(--ac-bg);color:var(--ac);}
-  .badge.out{background:var(--out-bg);color:var(--out);}
-  .badge.rows{background:#eef2ff;color:#4338ca;}
-  .rm{background:none;border:none;color:var(--out);cursor:pointer;font-size:12px;font-weight:600;padding:4px;}
-  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:7px;}
+  .badge{font-size:11px;padding:1px 7px;border-radius:2px;font-weight:700;letter-spacing:.3px;
+    background:#dfe5ec;color:var(--steel);}
+  .badge.in,.badge.ac,.badge.out{background:#dfe5ec;color:var(--steel);}
+  .badge.rows{background:transparent;color:var(--muted);padding:1px 0;font-family:var(--mono);font-weight:600;}
+  .rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;padding:4px;}
+  .rm:hover{color:var(--out);}
+  .btn{border:1px solid transparent;border-radius:var(--r);padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
+    transition:.12s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:7px;letter-spacing:.2px;}
   .bico{width:16px;height:16px;flex:none;}
-  .btn.primary{background:linear-gradient(135deg,#475569 0%,#0ea5e9 100%);color:#fff;box-shadow:0 6px 18px rgba(51,65,85,.30);}
-  .btn.primary:hover{filter:brightness(1.06);box-shadow:0 9px 24px rgba(79,70,229,.4);}
-  .btn.primary:disabled{background:linear-gradient(135deg,#8f96ad,#9aa2b8);color:#f2f4fa;box-shadow:none;filter:none;cursor:not-allowed;}
-  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
-  .btn.ghost:hover{border-color:var(--brand);color:var(--brand);}
-  .btn.data{background:#edf5fd;border:1px solid #cfe4f5;color:#0369a1;}
-  .btn.data:hover{border-color:#0284c7;background:#e0eefb;}
-  .btn.img{background:#e9f7f3;border:1px solid #cbe8e1;color:#0f766e;}
-  .btn.img:hover{border-color:#0d9488;background:#dbf1ea;}
-  .btn.sm{padding:5px 12px;font-size:12.5px;border-radius:7px;}
+  .btn.primary{background:var(--brand-d);color:#fff;border-color:var(--brand-d);}
+  .btn.primary:hover{background:var(--brand);border-color:var(--brand);}
+  .btn.primary:disabled{background:#c2c9d4;border-color:#c2c9d4;color:#f0f2f6;cursor:not-allowed;}
+  /* 次级按钮只有一种：白底灰边，悬停才亮主蓝 */
+  .btn.ghost,.btn.data,.btn.img,.btn.pay{background:#fff;border-color:var(--line-s);color:var(--steel);}
+  .btn.ghost:hover,.btn.data:hover,.btn.img:hover,.btn.pay:hover{border-color:var(--brand);color:var(--brand);background:#f2f7fa;}
+  .btn.sm{padding:5px 12px;font-size:12.5px;}
+  /* 「生成汇总表」：底部一条指示灯轨来回跑（只动 transform，走 GPU） */
+  #genBtn:not(:disabled){position:relative;overflow:hidden;background:var(--brand-d);}
+  #genBtn:not(:disabled):hover{background:#16324b;}
+  #genBtn:not(:disabled)::before{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+    background:rgba(125,205,255,.16);}
+  #genBtn:not(:disabled)::after{content:"";position:absolute;bottom:0;left:0;height:2px;width:32%;
+    background:linear-gradient(90deg,transparent,var(--accent) 45%,#bde6ff 55%,transparent);
+    animation:genRail 2.6s linear infinite;}
+  @keyframes genRail{0%{transform:translateX(-100%);}100%{transform:translateX(413%);}}
+  @media(prefers-reduced-motion:reduce){#genBtn:not(:disabled)::after{animation:none;}}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .toolbar .spacer{flex:1;}
+  .menuwrap{position:relative;}
+  .menu{position:absolute;left:0;top:calc(100% + 4px);z-index:40;background:#fff;
+    border:1px solid var(--line-s);border-radius:var(--r);min-width:240px;padding:4px;
+    box-shadow:0 8px 22px rgba(17,26,43,.14);}
+  .menu button{display:block;width:100%;text-align:left;border:none;background:none;font-family:inherit;
+    font-size:13px;color:var(--ink);padding:8px 10px;border-radius:2px;cursor:pointer;white-space:nowrap;}
+  .menu button:hover{background:var(--steel-bg);color:var(--brand);}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
-  .stat{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:#fbfcff;}
+  .stat{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--steel-bg);}
   .stat .k{font-size:12px;color:var(--muted);}
-  .stat .v{font-size:20px;font-weight:700;margin-top:2px;}
+  .stat .v{font-size:20px;font-weight:700;margin-top:2px;font-family:var(--mono);letter-spacing:-.3px;}
   .stat.in .v{color:var(--in);} .stat.out .v{color:var(--out);} .stat.ac .v{color:var(--ac);}
   .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);overflow-x:auto;}
   .tab{padding:9px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-weight:600;}
+  .tab:hover{color:var(--ink);}
   .tab.active{color:var(--brand);border-bottom-color:var(--brand);}
-  .search{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:220px;max-width:100%;font-family:inherit;}
-  .tablewrap{overflow:auto;max-height:calc(100vh - 150px);border:1px solid var(--line);border-radius:10px;margin-top:14px;}
+  .search{padding:7px 10px;border:1px solid var(--line-s);border-radius:var(--r);font-size:13px;width:220px;max-width:100%;font-family:inherit;background:#fff;}
+  .search:focus{outline:none;border-color:var(--brand);}
+  .tablewrap{overflow:auto;max-height:calc(100vh - 150px);border:1px solid var(--line);border-radius:var(--r);margin-top:14px;}
   .tablewrap table thead tr:first-child th:first-child{border-top-left-radius:9px;}
   .tablewrap table thead tr:first-child th:last-child{border-top-right-radius:9px;}
   .tablewrap table tbody tr:last-child td:first-child{border-bottom-left-radius:9px;}
   .tablewrap table tbody tr:last-child td:last-child{border-bottom-right-radius:9px;}
   table{border-collapse:collapse;width:100%;font-size:13px;}
   th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
-  th{background:#f8fafc;font-weight:600;color:#475569;position:sticky;top:0;z-index:2;cursor:pointer;user-select:none;
-     box-shadow:inset 0 -1px 0 var(--line);}
-  tbody tr:hover{background:#f8fbff;}
+  th{background:var(--steel-bg);font-weight:700;color:var(--steel);letter-spacing:.4px;position:sticky;top:0;z-index:2;cursor:pointer;user-select:none;
+     box-shadow:inset 0 1px 0 var(--line-s),inset 0 -1px 0 var(--line-s);}
+  tbody tr:hover{background:#f4f7fa;}
   td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
   td.ctr,th.ctr{text-align:center;font-variant-numeric:tabular-nums;}
   .pos{color:var(--in);font-weight:600;} .neg{color:var(--out);font-weight:600;} .acc{color:var(--ac);font-weight:600;}
-  tr.total-row td{font-weight:700;background:#f1f5f9;border-top:1px solid var(--line);}
+  tr.total-row td{font-weight:700;background:var(--steel-bg);border-top:1px solid var(--line-s);}
   tr.total-row td.pos{color:var(--in);} tr.total-row td.neg{color:var(--out);}
   .cust-link{color:var(--brand);cursor:pointer;text-decoration:none;font-weight:600;}
   .cust-link:hover{text-decoration:underline;}
@@ -127,57 +321,59 @@
   .pill{font-size:11px;padding:1px 7px;border-radius:999px;font-weight:600;}
   .pill.in{background:var(--in-bg);color:var(--in);} .pill.out{background:var(--out-bg);color:var(--out);}
   #panelBody{padding-top:2px;}
-  .cust-controls{max-width:860px;margin:6px auto 0;display:flex;justify-content:flex-end;gap:14px;font-size:13px;color:var(--muted);}
-  .cust-controls label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
-  .statement{max-width:860px;margin:12px auto 0;padding:28px 36px 22px;background:#fff;border:1px solid var(--line);border-radius:14px;}
+  /* 「备注」表头自带开关：勾上显示备注，取消就清空这一列 */
+  .rk-th{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;font:inherit;}
+  .rk-th input{margin:0;cursor:pointer;accent-color:var(--brand);}
+  .capturing .rk-th input{display:none;}   /* 导出图片里不要出现勾选框 */
+  .statement{max-width:860px;margin:12px auto 0;padding:28px 36px 22px;background:#fff;border:1px solid var(--line);border-radius:var(--r);}
   .st-title{text-align:center;font-size:19px;font-weight:700;letter-spacing:.5px;margin:6px 0 2px;}
   .st-sub{text-align:center;font-size:13.5px;color:var(--muted);margin:0 0 14px;}
   .st-foot{text-align:right;font-size:12.5px;color:var(--muted);margin:10px 4px 0;}
   .capturing{box-shadow:none!important;}
+  .shot-only{display:none;} .capturing .shot-only{display:block;}   /* 汇总表标题：网页不显示，下载图片时才有 */
   .capturing .tablewrap{overflow:visible!important;max-height:none!important;}
   .capturing th{position:static!important;box-shadow:none!important;}
-  .capturing.statement,.capturing .statement{max-width:none!important;width:max-content!important;}
-  .warn{border:1px solid #fca5a5;background:#fef2f2;border-left:4px solid var(--out);border-radius:10px;padding:14px 18px;margin-bottom:16px;}
-  .warn.ok{border-color:#86efac;background:#f0fdf4;border-left-color:var(--in);}
-  .warn h4{margin:0 0 6px;color:#b91c1c;font-size:14px;}
-  .warn.ok h4{color:#15803d;text-align:center;margin:0;}
+  /* 导出图片时把白框和内边距还回来，图片外观和以前一样 */
+  .capturing.statement,.capturing .statement{max-width:none!important;width:max-content!important;
+    border:1px solid var(--line)!important;border-radius:14px!important;
+    padding:28px 36px 22px!important;background:#fff!important;border-radius:var(--r)!important;}
+  /* 导出图片时，标题和表格之间的间距要还回来 */
+  .capturing .tablewrap{margin-top:14px!important;}
+  .warn{border:1px solid var(--line);background:#fff;border-left:3px solid var(--out);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;}
+  .warn.ok{border-left-color:var(--in);}
+  .warn h4{margin:0 0 6px;color:var(--out);font-size:14px;}
+  .warn.ok h4{color:var(--in);text-align:center;margin:0;}
   .warn .names{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;max-height:180px;overflow:auto;}
-  .warn .chip{background:#fff;border:1px solid #fca5a5;color:#b91c1c;border-radius:6px;padding:2px 9px;font-size:12.5px;}
-  .warn-how{background:#fff;border:1px solid #fbcccc;border-radius:9px;padding:11px 13px;margin:12px 0;font-size:13px;color:#7f1d1d;line-height:1.75;}
-  .warn-how>b{display:block;margin-bottom:5px;color:#b91c1c;}
+  .warn .chip{background:var(--steel-bg);border:1px solid var(--line-s);color:var(--ink);border-radius:2px;padding:2px 9px;font-size:12.5px;}
+  .warn-how{background:var(--steel-bg);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;margin:12px 0;font-size:13px;color:var(--ink);line-height:1.75;}
+  .warn-how>b{display:block;margin-bottom:5px;color:var(--out);}
   .warn-how>div{margin-top:5px;}
-  .warn-how b{color:#b91c1c;}
-  .foot{text-align:center;color:#8891ab;font-size:12px;margin-top:20px;}
-  .hidden{display:none;}
+  .warn-how b{color:var(--brand-d);}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:20px;letter-spacing:.5px;}
+  .hidden{display:none!important;}
   /* ===== 付出去的账（暖橙「流出」主题，刻意与收款冷蓝区分） ===== */
-  :root{--pay:#c2410c;--pay-d:#9a3412;--pay-bg:#fff3ea;--pay-line:#f1d5c0;}
+  :root{--pay:var(--steel);--pay-d:var(--brand-d);--pay-bg:var(--steel-bg);--pay-line:var(--line-s);}
   .p-ico{width:22px;height:22px;flex:none;color:var(--pay);}
   .p-badge{background:var(--pay-bg);color:var(--pay);}
-  .drop.pay{background:#fff8f2;border-color:var(--pay-line);}
-  .drop.pay:hover{border-color:var(--pay);background:#fff1e8;}
-  .drop.pay .tag{background:var(--pay-bg);color:var(--pay);}
-  .drop.pay .drop-ico{color:var(--pay);}
-  .btn.pay{background:linear-gradient(135deg,#9a3412 0%,#f97316 100%);color:#fff;box-shadow:0 6px 18px rgba(194,65,12,.28);}
-  .btn.pay:hover{filter:brightness(1.06);}
-  .btn.pay:disabled{filter:none;opacity:.6;cursor:not-allowed;}
+  .btn.pay:disabled{opacity:.6;cursor:not-allowed;}
   .p-stat .v{color:var(--pay);}
   .p-merge{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;}
   .p-row{cursor:pointer;}
-  .p-row:hover{background:#fff6ef;}
-  .p-cap{font-size:12.5px;color:var(--pay-d);background:var(--pay-bg);border:1px solid var(--pay-line);border-radius:9px;padding:9px 13px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .p-row:hover{background:#f4f7fa;}
+  .p-cap{font-size:12.5px;color:var(--steel);background:var(--steel-bg);border:1px solid var(--line);border-radius:var(--r);padding:9px 13px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   /* ===== 结果区顶部：收款 / 付款 视图切换 ===== */
-  .viewswitch{display:inline-flex;gap:4px;padding:4px;background:#eef2f8;border:1px solid var(--line);border-radius:12px;margin-bottom:18px;}
-  .vseg{border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--muted);padding:9px 18px;border-radius:9px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;}
+  .viewswitch{display:inline-flex;gap:4px;padding:3px;background:var(--steel-bg);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px;}
+  .vseg{border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--muted);padding:8px 16px;border-radius:2px;cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:7px;}
   .vseg:hover{color:var(--ink);}
-  .vseg.active{background:#fff;box-shadow:0 2px 8px rgba(51,65,85,.14);}
+  .vseg.active{background:#fff;border:1px solid var(--line-s);}
   .vseg.recv.active{color:var(--brand);}
   .vseg.pay.active{color:var(--pay);}
   .vseg .vico{width:16px;height:16px;flex:none;}
   /* 表格格式切换（工具格式 / 财务格式） */
   .fmtswitch{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 14px;}
-  .fseg{border:1px solid var(--line);background:#fff;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--muted);padding:7px 15px;border-radius:9px;cursor:pointer;transition:.15s;}
-  .fseg:hover{color:var(--ink);border-color:#c7d2e0;}
-  .fseg.active{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 2px 8px rgba(2,132,199,.22);}
+  .fseg{border:1px solid var(--line-s);background:#fff;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--muted);padding:7px 14px;border-radius:var(--r);cursor:pointer;transition:.12s;}
+  .fseg:hover{color:var(--ink);border-color:var(--brand);}
+  .fseg.active{background:#fff;border-color:var(--brand);color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand);}
   /* 财务模板样式：灰底表头 D9D9D9 + 浅灰细网格，与模板文件一致 */
   .tplsheet{max-width:1040px;padding:22px 26px 20px;}
   .tpl-cap{text-align:center;font-size:15px;font-weight:700;color:#333;margin:0 0 12px;}
@@ -194,18 +390,34 @@
   .tpl-tbl td.c{text-align:center;}
   .tpl-tbl tbody tr:hover{background:#fafcff;}
   .tpl-tbl tr.tpl-total td{font-weight:700;background:#fff;}
-  .opin{width:96px;font-family:inherit;font-size:12.5px;text-align:right;border:1px solid #e3c98a;border-radius:6px;padding:3px 6px;background:#fffbeb;color:var(--ink);}
+  .opin{width:96px;font-family:var(--mono);font-size:12.5px;text-align:right;border:1px solid var(--line-s);border-radius:2px;padding:3px 6px;background:#fff;color:var(--ink);}
   .opin:focus{outline:none;border-color:var(--brand);background:#fff;}
   .opshot{display:none;font-variant-numeric:tabular-nums;}
   .capturing .opin{display:none;} .capturing .opshot{display:inline;}
+
+  /* ===== 导出图片：账本风，黑白灰为主，只有负数用红 ===== */
+  .capturing td.pos,.capturing td.acc,.capturing td.neg,
+  .capturing tr.total-row td.pos,.capturing tr.total-row td.neg{color:var(--ink);font-weight:500;}
+  /* 最后一列是净额，负数才留红 */
+  .capturing td:last-child.neg,.capturing tr.total-row td:last-child.neg{color:var(--out);font-weight:600;}
+  .capturing .cust-link{color:var(--ink);font-weight:500;text-decoration:none;}
+  .capturing .pill,.capturing .badge{background:transparent!important;color:var(--muted)!important;padding:0!important;}
+  /* 表格骨架硬一点：表头上下加实线，合计行加粗上线 */
+  .capturing th{background:#eceff3!important;color:#2b3648!important;font-weight:700;letter-spacing:.6px;
+    border-top:1.5px solid #6b7686!important;border-bottom:1.5px solid #6b7686!important;}
+  .capturing td{border-bottom:1px solid #dfe3e9!important;}
+  .capturing tr.total-row td{background:#f2f4f7!important;border-top:1.5px solid #6b7686!important;
+    border-bottom:1.5px solid #6b7686!important;}
+  .capturing .st-title{letter-spacing:3px;}
+  .capturing .st-sub{color:#6b7686;}
   .p-sum-link{color:var(--pay);font-weight:600;}
-  .p-detail-row>td{background:#fff8f3;padding:0 12px 10px;}
-  .p-detail{overflow-x:auto;border:1px solid var(--pay-line);border-radius:8px;margin:2px 0 6px;}
+  .p-detail-row>td{background:var(--steel-bg);padding:0 12px 10px;}
+  .p-detail{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);margin:2px 0 6px;}
   table.p-inner{width:100%;border-collapse:collapse;font-size:12.5px;}
-  table.p-inner th{background:#fdf1e7;color:var(--pay-d);position:static;cursor:default;top:auto;}
+  table.p-inner th{background:var(--steel-bg);color:var(--steel);position:static;cursor:default;top:auto;}
   table.p-inner th,table.p-inner td{padding:6px 10px;white-space:nowrap;}
-  .p-year{max-width:360px;margin:0 auto 16px;border:1px solid var(--pay-line);border-radius:10px;overflow:hidden;}
-  .p-year-h{background:#fdf1e7;color:var(--pay-d);font-weight:700;font-size:12.5px;text-align:center;padding:6px;}
+  .p-year{max-width:360px;margin:0 auto 16px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+  .p-year-h{background:var(--steel-bg);color:var(--steel);font-weight:700;font-size:12.5px;text-align:center;padding:6px;}
   .p-year table{font-size:12.5px;}
 </style>
 </head>
@@ -219,23 +431,53 @@
   <svg class="cg small" viewBox="0 0 24 24"><defs><linearGradient id="cgR2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="url(#cgR2)"/></svg>
 </div>
 <header class="top">
-  <canvas id="hdr" aria-hidden="true"></canvas>
   <div class="brand">
-    <span class="logo" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none">
+    <span class="logo" aria-hidden="true"><svg viewBox="1 5.5 37 29" fill="none">
       <defs><linearGradient id="lg" x1="0" y1="1" x2="1" y2="0">
         <stop offset="0" stop-color="#38bdf8"/><stop offset="0.55" stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>
       <g transform="translate(1,6) scale(1.15)"><g class="gear gspin"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="url(#lg)"/></g></g>
       <g transform="translate(20,16) scale(0.72)"><g class="gear gspinr"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="url(#lg)"/></g></g>
     </svg></span>
-    <div class="ttl"><h1>客户账目汇总工具</h1><div class="tsub">CLIENT · ACCOUNT · SUMMARY</div></div>
+    <div class="ttl"><h1>慧颖</h1><div class="tsub">ACCOUNT SUMMARY</div></div>
   </div>
 </header>
+<div id="hdPeek" title="显示标题栏"></div>
+
+<script>
+/* 标题栏：点一下收起；收起后页面最顶那条窄条点一下放回来。
+   --hd 同时喂给 body 的上内边距和左栏 sticky 的 top，收起时置 0，内容就顶上去 */
+(function(){
+  var h=document.querySelector('header.top');if(!h)return;
+  var real=h.offsetHeight,hidden=false;
+  function apply(){h.classList.toggle('hd-hide',hidden);
+    document.documentElement.classList.toggle('hd-off',hidden);
+    document.documentElement.style.setProperty('--hd',(hidden?0:real)+'px');}
+  function measure(){var t=h.classList.contains('hd-hide');h.classList.remove('hd-hide');
+    real=h.offsetHeight;h.classList.toggle('hd-hide',t);apply();}
+  measure();addEventListener('resize',measure);
+  if(window.ResizeObserver)new ResizeObserver(measure).observe(h);
+  h.addEventListener('click',function(){hidden=!hidden;apply();});
+  /* 这段脚本跑在按钮之前，直接 getElementById 会拿到 null，所以用事件委托 */
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.closest&&e.target.closest('#hdPeek')){hidden=false;apply();}});
+})();
+</script>
 
 <div class="wrap">
-  <!-- STEP 1: upload + generate -->
+ <div class="layout">
+  <!-- 左栏：上传入口 -->
+  <aside class="side">
   <div class="card">
-    <h2><span class="step">1</span> 上传表格</h2>
-    <p class="hint">支持 .xlsx / .xls / .csv</p>
+    <div class="sect-h">
+      <span class="sect-bar"></span>
+      <div class="sect-txt">
+        <div class="sect-t">上传表格</div>
+        <div class="sect-s">DATA INPUT · XLSX / XLS / CSV</div>
+      </div>
+      <button class="sect-tog" id="sectTog" type="button" data-lbl="收起上传区">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+    </div>
     <div class="drop-row">
       <div class="drop income" id="dropIncome">
         <span class="tag">银行进账</span>
@@ -273,38 +515,50 @@
         <input type="file" id="filePay" accept=".xlsx,.xls,.csv" class="hidden">
       </div>
     </div>
-    <div id="restoreBar"></div>
-    <div id="masterStatus"></div>
-    <div class="filelist" id="fileList"></div>
-    <div id="payFileStatus"></div>
-    <div style="text-align:center;margin-top:20px;padding-top:18px;border-top:1px solid var(--line);">
-      <button class="btn primary" id="genBtn" disabled>生成汇总表</button>
-      <div class="hint" id="genHint" style="margin:10px 0 0;"></div>
+    <div class="sidefiles">
+      <div id="masterStatus"></div>
+      <div class="filelist" id="fileList"></div>
+      <div id="payFileStatus"></div>
+    </div>
+    <div class="genwrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+      <button class="btn primary" id="genBtn" disabled style="width:100%;"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M4 12h16M4 17.5h10"/><path d="M17.5 15v6M14.8 18.3l2.7 2.7 2.7-2.7"/></svg><span class="blbl">生成汇总表</span></button>
+      <div class="hint" id="genHint" style="margin:9px 0 0;text-align:center;"></div>
     </div>
   </div>
+  <div id="warnBox"></div>
+  <div id="restoreBar"></div>
+  </aside>
+
+  <!-- 右栏：已传文件 + 结果 -->
+  <main class="main">
+    <div class="empty-note">左边传表格，结果显示在这里</div>
 
   <!-- STEP 2: preview + download -->
   <div class="card hidden" id="resultCard">
-    <h2><span class="step">2</span> 预览与下载</h2>
     <div class="viewswitch hidden" id="viewSwitch"></div>
 
     <!-- 视图 A：客户账目汇总（收款） -->
     <div id="viewRecv">
-    <div id="warnBox"></div>
     <div class="stats" id="stats"></div>
+    <div class="ctrlrow">
     <div class="fmtswitch" id="fmtSwitch">
       <button class="fseg active" data-f="tool" onclick="switchFmt('tool')">工具格式</button>
       <button class="fseg" data-f="fin" onclick="switchFmt('fin')">财务格式</button>
     </div>
-    <div class="toolbar" style="margin-bottom:14px;">
-      <button class="btn primary" id="dlAll"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg><span class="blbl">下载汇总表</span></button>
-      <button class="btn data" id="dlSummary"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.7h17M9.2 4.5v15"/></svg><span class="blbl">仅下载客户汇总表</span></button>
-      <button class="btn data" id="dlCurrent"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h7l5 5v13H6z"/><path d="M13 3v5h5"/><path d="M9 13h6M9 16.5h4"/></svg><span class="blbl">下载当前客户明细表</span></button>
-      <button class="btn img" id="dlImage"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg><span class="blbl">下载当前表格图片</span></button>
-      <button class="btn img" id="dlAllImages"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v10.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M3 4.5h18V8H3z"/><path d="M10 12h4"/></svg><span class="blbl">批量下载全部图片(ZIP)</span></button>
+    <div class="toolbar">
+      <button class="btn primary" id="dlCurrent"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.7h17M9.2 4.5v15"/></svg><span class="blbl">下载为表格</span></button>
+      <button class="btn img" id="dlImage"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg><span class="blbl">下载为图片</span></button>
+      <div class="menuwrap">
+        <button class="btn ghost" id="moreBtn">更多 ▾</button>
+        <div class="menu hidden" id="moreMenu">
+          <button id="dlAll">完整汇总表（含每个客户明细）</button>
+          <button id="dlAllImages">全部客户图片打包（ZIP）</button>
+        </div>
+      </div>
       <span class="spacer"></span>
       <input type="text" class="search" id="search" placeholder="搜索客户名…">
     </div>
+    </div><!-- /ctrlrow -->
     <div class="tabs" id="tabs"></div>
     <div id="panelBody"></div>
     </div><!-- /viewRecv -->
@@ -319,7 +573,7 @@
         <div class="stats" id="payStats"></div>
         <div class="toolbar" style="margin:2px 0 4px;">
           <button class="btn pay" id="payDlXlsx"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.6"/><path d="M3.5 9.7h17M9.2 4.5v15"/></svg>下载汇总（Excel）</button>
-          <button class="btn img" id="payDlImg"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg>下载汇总图片</button>
+          <button class="btn img" id="payDlImg"><svg class="bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 16.5l4.5-4 3.2 2.8L15.5 11l4.5 4.5"/></svg>下载汇总图片</button>
           <label class="p-merge"><input type="checkbox" id="payMerge" checked> 合并括号备注（同一供应商归到一起）</label>
           <span class="spacer"></span>
           <input type="text" class="search" id="paySearch" placeholder="搜索对方科目 / 供应商…">
@@ -328,6 +582,9 @@
       </div>
     </div><!-- /viewPay -->
   </div>
+
+  </main>
+ </div><!-- /layout -->
 
   <div class="foot">数据全部在本机浏览器中处理，不会上传到任何服务器。</div>
 </div>
@@ -338,6 +595,7 @@ const PREPARER='宁波市镇海慧颖经营部';
 const MASTER_NAMES=["宁波市镇海隆庆金属制品厂(普通合伙)","宁波市镇海正鹏模具厂","宁波固特瑞汽车零部件有限公司","浙江善力高科新材料有限公司","宁波基圣机械有限公司","宁波圆兴冶金装备制造有限公司","宁波飞迈金属制品有限公司","宁波力程动力科技有限公司","慈溪市晟睿自动化设备有限公司","宁波天益齿轴齿轮有限公司","宁波富铭祺五金制品有限公司","宁波市镇海志星机械厂","宁波鸿大电子有限公司","宁波瑞乐机械制造有限公司","宁波硕美日用品有限公司","宁波市天瑞压缩机配件有限公司","浙江钻邦水处理设备有限公司","宁波蓝拓模具有限公司","宁波浩峰电器科技有限公司","宁波速达美德自动化科技有限公司","宁波市镇海普渡锻件厂","宁波远佳新材料公司","宁波博财培株机械有限公司","宁波金优达紧固件公司","宁波沃特美逊机器人科技有限公司","宁波市镇海真光五金压件厂","标克激光智能装备科技(宁波)有限公司","宁波市镇海珍顺铝模","宁波铭星电子科技有限公司","浙江华心自动化设备有限公司","宁波兴鹏新材料科技有限公司","宁波市镇海伟业金属制品有限公司","宁波领诺铝模制造有限公司","镇海樊帅模具公司","宁波金彷达紧固件有限公司","宁波钰邦机械科技有限公司","宁波市甬昌工贸实业公司","宁波众富机械设备有限公司","宁波市镇海康太汽车电器厂","宁波宜浩日用品有限公司","宁波市镇海博力摩擦材料厂","宁波天胜传动件有限公司","宁波市镇海贵驰朝阳冲压件厂","宁波畅达木模具有限公司","宁波盈实机械有限公司","宁波市镇海裕成精密模具厂","镇海国雅冲压件有限公司","宁波世通汽车零部件有限公司","宁波垒力新材料有限公司","宁波晟羿模具有限公司","宁波市镇海豪承机电有限公司","宁波市镇海宁港汽摩配件厂(普通合伙)","宁波市镇海云驰机械有限公司","宁波市镇海德瑞普电器有限公司","宁波市欣宇厨卫科技有限公司","宁波鑫贝尔数控机床有限公司","宁波市镇海蟹浦成校五金厂","宁波市镇海山多士金属制品有限公司","宁波良宇智能装备公司","衢州镇荣科技有限公司","宁波永轩自动化科技有限公司","宁波金而泰机械有限公司","宁波市镇海区爱菲阳智能设备有限公司","宁波市钫锝科技有限公司","岱山县同道密封件厂","宁波镇海蟹浦成校厂","宁波东贝机械有限公司","宁波市镇海实兴机电设备有限公司","镇海升旺达电装配件厂","宁波凯鑫机械配件有限公司","宁波市镇海丰博冲压件厂","宁波昊远钢格板有限公司","宁波市镇海亿品精密模具厂","宁波迪克制冷机电有限公司","宁波金丽辉机械有限公司","慈溪市华呗汽车零部件制造有限公司","宁波仁鑫捷成智能科技有限公司","宁波市镇海环宇电子有限公司","镇海科创兴机电公司","宁波市镇海伟恒汽配制造有限公司","宁波顺特工程安装有限责任公司","宁波市雅德阁遮阳科技有限责任公司","宁波诚孚机械有限公司","宁波静远新型材料公司","宁波斯格蔓金属制品有限公司","宁波市镇海晟源经贸有限公司","宁波市镇海区骆驼桂森机械厂","宁波奉永态环保科技有限公司","宁波久和车业有限公司","宁波常禾日用品有限公司","宁波双睦粉末冶金有限公司","宁波利博文具有限公司","宁波镇海磊特锻件有限公司","宁波市镇海武涛模具制造有限公司","宁波英孚科技发展有限公司","宁波鼎昇木模架制造有限公司","宁波市镇海开鑫粉末冶金公司","宁波市镇海卓轩电子科技有限公司","宁波市镇海弗特机械厂","慈溪市宇驰工艺品有限公司","宁波镇海卓轩电子公司","宁波市江北日明橡塑制品有限公司","宁波奉裱环保科技公司","镇海长鑫模具制造厂","宁波市镇海汉邦电器工具厂","宁波市镇海佳创金属制品厂","宁波市镇海超群模具厂","宁波浑意机械新材料科技公司","宁波市镇海荣昕机械制造厂(普通合伙)","宁波鸿芯精密模具有限公司","宁波镇海佳雷机械厂","宁波水宸自动化科技有限公司","宁波奇谷机械有限公司","宁波市镇海佳安塑料制品有限公司","镇海围脉电信厂","宁波创洋户外用品有限公司","宁波博帆卫浴有限公司","宁波国脉机械制造有限公司","宁波市宏启家居用品有限公司","宁波市鄞州永立电子配件有限公司","宁波市镇海瑄瑄金属制品有限公司","宁波市镇海迪奥达液压件厂","宁波恺文汽车零部件有限公司","宁波慧鹏机械有限公司","宁波新材料科技城泽彦机械有限公司","宁波景程体育用品有限公司","宁波瑞盟汽车配件有限公司","宁波耀科电器制造有限公司","宁波镇海平正模具制造有限公司","宁波韵辰塑业有限公司","宁波韵达模具有限公司"];
 const store={income:[],expense:[],accept:[],master:null};
 let result=null,activeTab='__summary__',showRemark=true,sortKey='both',sortDir=-1;
+let sideCollapsed=false;   // 上传区是否折叠成一排图标
 let currentView='recv';   // 结果区当前视图：recv=收款 / pay=付款
 let tblFmt='tool';        // 表格格式：tool=工具自有格式 / fin=财务给的模板格式
 /* 期初应收金额：手填优先，其次读「客户名汇总」表里的「期初」列 */
@@ -368,7 +626,7 @@ function sessionSnapshot(){
     expense:store.expense.filter(e=>e.buf).map(pack),
     master:(store.master&&store.master.buf)?{fileName:store.master.fileName,buf:store.master.buf}:null,
     pay:(window.paySnapshot?window.paySnapshot():null),
-    ui:{currentView,tblFmt,showRemark,activeTab,generated:!!(result||(window.payHasData&&window.payHasData()))}};}
+    ui:{currentView,tblFmt,showRemark,sideCollapsed,activeTab,generated:!!(result||(window.payHasData&&window.payHasData()))}};}
 let _saveTimer=null;
 function saveSession(){if(!_sessionReady)return;clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{try{idbSet(SKEY,sessionSnapshot()).catch(()=>{});}catch(e){}},250);}
@@ -385,7 +643,7 @@ function renderRestoreBar(ts){
   const t=ts?new Date(ts):null;
   const when=t?`${t.getFullYear()}年${t.getMonth()+1}月${t.getDate()}日 ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`:'';
   el.innerHTML=`<div class="fitem" style="margin-bottom:12px;"><div class="fhead">
-    <span class="badge" style="background:#dbeafe;color:#1d4ed8;">已恢复上次数据</span>
+    <span class="badge">已恢复上次数据</span>
     <span class="fname" style="font-weight:400;">${when?'保存于 '+when+'　·　':''}刷新或关掉网页都不会丢，数据只存在本机浏览器</span>
     <button class="rm" onclick="clearSession()">清空数据</button></div></div>`;}
 async function restoreSession(){
@@ -398,7 +656,8 @@ async function restoreSession(){
     if(s.master&&s.master.buf){try{const wb=XLSX.read(s.master.buf,{type:'array'});const ms=parseMaster(wb);
       if(ms.std.size)store.master={fileName:s.master.fileName,std:ms.std,opening:ms.opening,buf:s.master.buf};}catch(e){}}
     if(s.pay&&window.payRestore)window.payRestore(s.pay);
-    if(s.ui){currentView=s.ui.currentView||'recv';tblFmt=s.ui.tblFmt||'tool';showRemark=s.ui.showRemark!==false;}
+    if(s.ui){currentView=s.ui.currentView||'recv';tblFmt=s.ui.tblFmt||'tool';showRemark=s.ui.showRemark!==false;
+      sideCollapsed=!!s.ui.sideCollapsed;applySideCollapse();}
     renderFileList();renderMaster();renderFmtUI();updateGenState();renderRestoreBar(s.ts);
     document.querySelectorAll('#fmtSwitch .fseg').forEach(b=>b.classList.toggle('active',b.dataset.f===tblFmt));
     if(s.ui&&s.ui.generated&&!document.getElementById('genBtn').disabled){
@@ -436,16 +695,13 @@ function getOpening(name){if(openingManual.has(name))return openingManual.get(na
 function finRecv(c){return round2(c.inSum+c.acSum);}   // 财务口径「收款金额」= 进账 + 电子承兑
 window.setOpening=(name,v)=>{const n=Number(String(v==null?'':v).replace(/[,¥￥\s]/g,''))||0;
   openingManual.set(name,round2(n));saveOpening();renderPanel();};
-const BTN_LBL={
-  dlAll:['下载汇总表','下载汇总表'],
-  dlSummary:['仅下载客户汇总表','仅下载客户汇总表'],
-  dlCurrent:['下载当前客户明细表','下载当前客户明细表'],
-  dlImage:['下载当前表格图片','下载当前表格图片'],
-  dlAllImages:['批量下载全部图片(ZIP)','批量下载全部图片(ZIP)']};
-function renderFmtUI(){const i=tblFmt==='fin'?1:0;
-  Object.keys(BTN_LBL).forEach(id=>{const el=document.querySelector('#'+id+' .blbl');
-    if(el)el.textContent=BTN_LBL[id][i];});
+/* 下载按钮只认「你现在看到的是哪张表」，文案跟着页签变 */
+function syncDlLabel(){
+  const x=document.querySelector('#dlCurrent .blbl'),i=document.querySelector('#dlImage .blbl');
+  if(x)x.textContent='下载为表格';
+  if(i)i.textContent='下载为图片';
 }
+function renderFmtUI(){syncDlLabel();}
 window.switchFmt=f=>{tblFmt=f;
   document.querySelectorAll('#fmtSwitch .fseg').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
   renderFmtUI();renderPanel();saveSession();};
@@ -605,7 +861,7 @@ function handleMaster(file){const reader=new FileReader();
 function renderMaster(){const el=document.getElementById('masterStatus');
   if(!store.master){el.innerHTML='';return;}const m=store.master;
   el.innerHTML=`<div class="fitem" style="margin-top:12px;"><div class="fhead">
-    <span class="badge" style="background:#ede9fe;color:#6d28d9;">客户名汇总</span>
+    <span class="badge">客户名汇总</span>
     <span class="fname">${escapeHtml(m.fileName)}</span>
     <span class="badge rows">${m.std.size} 个标准客户名</span>
     ${m.opening&&m.opening.size?`<span class="badge rows">读到 ${m.opening.size} 个期初应收</span>`:''}
@@ -670,6 +926,8 @@ function setupResultSwitcher(){
 function showView(){
   document.getElementById('viewRecv').classList.toggle('hidden',currentView!=='recv');
   document.getElementById('viewPay').classList.toggle('hidden',currentView!=='pay');
+  /* warnBox 搬到左栏后不在 viewRecv 里了，要单独跟着切 */
+  const wb=document.getElementById('warnBox');if(wb)wb.classList.toggle('hidden',currentView!=='recv');
 }
 window.switchView=k=>{currentView=k;
   document.querySelectorAll('#viewSwitch .vseg').forEach(b=>b.classList.toggle('active',b.dataset.k===k));
@@ -697,7 +955,7 @@ function renderResult(){
     <div class="stat in"><div class="k">银行进账合计（收入）</div><div class="v">¥${fmt(r.totalIn)}</div><div class="k">${r.inCount} 笔</div></div>
     <div class="stat ac"><div class="k">电子承兑合计</div><div class="v">¥${fmt(r.totalAc)}</div><div class="k">${r.acCount} 笔</div></div>
     <div class="stat out"><div class="k">开票合计</div><div class="v">¥${fmt(r.totalOut)}</div><div class="k">${r.outCount} 笔</div></div>
-    <div class="stat"><div class="k">净额（银行进账+承兑−开票）</div><div class="v" style="color:${r.totalIn+r.totalAc-r.totalOut>=0?'var(--in)':'var(--out)'}">¥${fmt(r.totalIn+r.totalAc-r.totalOut)}</div></div>
+    <div class="stat"><div class="k">净额（进账+承兑−开票）</div><div class="v" style="color:${r.totalIn+r.totalAc-r.totalOut>=0?'var(--in)':'var(--out)'}">¥${fmt(r.totalIn+r.totalAc-r.totalOut)}</div></div>
     <div class="stat"><div class="k">客户数</div><div class="v">${r.customers.length}</div></div>`;
   renderTabs();renderPanel();}
 function renderTabs(){
@@ -706,7 +964,7 @@ function renderTabs(){
   let html=`<button class="tab ${activeTab==='__summary__'?'active':''}" onclick="switchTab('__summary__')">汇总表</button>`;
   html+=list.map(c=>`<button class="tab ${activeTab===c.name?'active':''}" onclick="switchTab('${escapeAttr(c.name)}')">${escapeHtml(c.name)}</button>`).join('');
   document.getElementById('tabs').innerHTML=html;}
-window.switchTab=name=>{activeTab=name;renderTabs();renderPanel();saveSession();};
+window.switchTab=name=>{activeTab=name;renderTabs();renderPanel();syncDlLabel();saveSession();};
 function renderPanel(){const body=document.getElementById('panelBody');
   if(activeTab==='__summary__'){body.innerHTML=summaryTable();return;}
   const c=result.customers.find(x=>x.name===activeTab);
@@ -752,8 +1010,8 @@ function summaryDocHTML(rows){
     </tbody></table></div>`;
   const gp=dataPeriod();
   return `<div class="statement" style="max-width:1040px;">
-    <div class="st-title">客户账目汇总表</div>
-    <div class="st-sub">${gp?escapeHtml(gp)+' · ':''}全部客户 共 ${rows.length} 户</div>
+    <div class="st-title shot-only">客户账目汇总表</div>
+    <div class="st-sub shot-only">${gp?escapeHtml(gp)+' · ':''}全部客户 共 ${rows.length} 户</div>
     ${table}
     <div class="st-foot">制单人：${escapeHtml(PREPARER)}<br>制表日期：${todayCN()}</div></div>`;}
 window.sortSummary=k=>{if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}renderPanel();};
@@ -776,11 +1034,11 @@ function statementHTML(c){
     <td class="num ${run>=0?'pos':'neg'}">¥${fmt(run)}</td>
     <td>${showRemark?escapeHtml(r.remark||''):''}</td></tr>`;}).join('');
   return `<div class="statement">
-    <div class="st-title">${escapeHtml(c.name)}</div>
-    <div class="st-sub">${escapeHtml(period)}</div>
+    <div class="st-title shot-only">${escapeHtml(c.name)}</div>
+    <div class="st-sub shot-only">${escapeHtml(period)}</div>
     <div class="tablewrap"><table>
       <colgroup><col style="width:6%"><col style="width:17%"><col style="width:14%"><col style="width:15%"><col style="width:14%"><col style="width:15%"><col style="width:19%"></colgroup>
-      <thead><tr><th class="ctr">序号</th><th>日期</th><th class="num">银行进账</th><th class="num">电子承兑</th><th class="num">开票</th><th class="num">差额</th><th class="ctr">备注</th></tr></thead>
+      <thead><tr><th class="ctr">序号</th><th>日期</th><th class="num">银行进账</th><th class="num">电子承兑</th><th class="num">开票</th><th class="num">差额</th><th class="ctr"><label class="rk-th"><input type="checkbox" ${showRemark?'checked':''} onchange="toggleRemark(this.checked)">备注</label></th></tr></thead>
       <tbody>${trs}
         <tr class="total-row"><td></td><td>合计</td>
           <td class="num pos">¥${fmt(c.inSum)}</td>
@@ -791,9 +1049,25 @@ function statementHTML(c){
     <div class="st-note" style="font-size:11px;color:var(--muted);margin-top:6px;">注：差额 = 银行进账 + 电子承兑 − 开票（客户以承兑抵付货款，同样计入收款）。</div>
     <div class="st-foot">制单人：${escapeHtml(PREPARER)}<br>制单日期：${todayCN()}</div></div>`;}
 function custDetail(c){
-  const ctrl=`<div class="cust-controls"><label><input type="checkbox" ${showRemark?'checked':''} onchange="toggleRemark(this.checked)"> 显示备注列</label></div>`;
-  return ctrl+(tblFmt==='fin'?finStatementHTML(c):statementHTML(c));}
+  return tblFmt==='fin'?finStatementHTML(c):statementHTML(c);}
 window.toggleRemark=v=>{showRemark=v;renderPanel();};
+/* 收起后只剩图标，名字用 data-lbl 画成悬停提示（title 有 1 秒延迟，不用） */
+document.querySelectorAll('.side .drop').forEach(d=>{
+  const t=d.querySelector('.tag');if(!t)return;
+  d.dataset.lbl=t.textContent.trim();d.classList.add('rail-tip');});
+{const el=document.getElementById('sectTog');if(el)el.classList.add('rail-tip');}
+/* 生成按钮自己的 ::before/::after 被指示灯轨占着了，提示挂到外层 .genwrap 上 */
+{const w=document.querySelector('.side .genwrap');
+ if(w){w.classList.add('rail-tip');w.dataset.lbl='生成汇总表';}}
+/* 上传区折叠：收起后每个入口只剩图标，还能点、还能拖文件进去 */
+function applySideCollapse(){
+  const lay=document.querySelector('.layout');if(!lay)return;
+  lay.classList.toggle('side-hid',sideCollapsed);
+  const t=document.getElementById('sectTog');
+  if(t){t.dataset.lbl=sideCollapsed?'展开上传区':'收起上传区';t.removeAttribute('title');}}
+document.getElementById('sectTog').addEventListener('click',()=>{
+  sideCollapsed=!sideCollapsed;applySideCollapse();saveSession();});
+
 
 
 const TPL_DETAIL_B64='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';
@@ -845,7 +1119,7 @@ function finStatementHTML(c){
       <td>${showRemark?escapeHtml(r.remark):''}</td></tr>`).join('');
   return `<div class="statement tplsheet"><div class="tpl-cap">${escapeHtml(c.name)} · 客户明细表</div>
     <div class="tablewrap tplwrap"><table class="tpl-tbl">
-      <thead><tr><th>日期</th><th>承兑/银行收款</th><th>开票金额</th><th>收款金额</th><th>应收金额</th><th>备注</th></tr></thead>
+      <thead><tr><th>日期</th><th>承兑/银行收款</th><th>开票金额</th><th>收款金额</th><th>应收金额</th><th><label class="rk-th"><input type="checkbox" ${showRemark?'checked':''} onchange="toggleRemark(this.checked)">备注</label></th></tr></thead>
       <tbody>${trs}
         <tr class="tpl-total"><td>合计</td><td></td><td class="n">${finNum(D.inv)}</td>
           <td class="n">${finNum(D.recv)}</td><td class="n">${finNum(D.due)}</td><td></td></tr>
@@ -986,8 +1260,6 @@ async function saveBook(zip,filename){saveBlob(await zip.generateAsync({type:'bl
 async function withBtn(id,fn){const b=document.getElementById(id),old=b.innerHTML;
   b.disabled=true;b.textContent='生成中…';
   try{await fn();}catch(e){alert('导出失败：'+e);}finally{b.innerHTML=old;b.disabled=false;}}
-function downloadFinSummary(){return withBtn('dlSummary',async()=>{
-  await saveBook(await bookSummary(),'客户汇总表'+periodTag()+'.xlsx');});}
 function downloadFinCurrent(){return withBtn('dlCurrent',async()=>{
   if(activeTab==='__summary__'){await saveBook(await bookSummary(),'客户汇总表'+periodTag()+'.xlsx');return;}
   const c=result.customers.find(x=>x.name===activeTab);if(!c)return;
@@ -1153,11 +1425,15 @@ bindDrop('dropExpense','fileExpense','expense');
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='';}));
   drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleMaster(e.dataTransfer.files[0]);});})();
 document.getElementById('genBtn').addEventListener('click',onGenerate);
-document.getElementById('dlAll').addEventListener('click',()=>tblFmt==='fin'?downloadFinAll():downloadAll());
-document.getElementById('dlSummary').addEventListener('click',()=>tblFmt==='fin'?downloadFinSummary():downloadSummary());
+document.getElementById('dlAll').addEventListener('click',()=>{closeMore();return tblFmt==='fin'?downloadFinAll():downloadAll();});
 document.getElementById('dlCurrent').addEventListener('click',()=>tblFmt==='fin'?downloadFinCurrent():downloadCurrent());
 document.getElementById('dlImage').addEventListener('click',downloadImage);
-document.getElementById('dlAllImages').addEventListener('click',downloadAllImages);
+document.getElementById('dlAllImages').addEventListener('click',()=>{closeMore();downloadAllImages();});
+/* 「更多」下拉 */
+function closeMore(){document.getElementById('moreMenu').classList.add('hidden');}
+document.getElementById('moreBtn').addEventListener('click',e=>{e.stopPropagation();
+  document.getElementById('moreMenu').classList.toggle('hidden');});
+document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMore();});
 document.getElementById('search').addEventListener('input',()=>{renderTabs();if(activeTab==='__summary__')renderPanel();});
 updateGenState();
 /* 等下面的「付款」模块也注册完（payRestore 等），再恢复上次会话 */
@@ -1437,11 +1713,8 @@ window.addEventListener('DOMContentLoaded',()=>{restoreSession();});
     gl.uniform3f(U('uA'),0.96,0.97,0.99);gl.uniform3f(U('uB'),0.91,0.93,0.97);
     gl.uniform3f(U('uAcc1'),0.42,0.52,0.66);gl.uniform3f(U('uAcc2'),0.62,0.72,0.86);
     gl.uniform1f(U('uScale'),1.6);gl.uniform1f(U('uMix1'),0.5);gl.uniform1f(U('uMix2'),0.34);gl.uniform1f(U('uSpeed'),0.05);});
-  const hcv=document.getElementById('hdr');
-  const hdr=start(hcv,(gl,U)=>{
-    gl.uniform3f(U('uA'),0.94,0.96,0.99);gl.uniform3f(U('uB'),0.88,0.91,0.97);
-    gl.uniform3f(U('uAcc1'),0.30,0.42,0.62);gl.uniform3f(U('uAcc2'),0.55,0.66,0.85);
-    gl.uniform1f(U('uScale'),1.5);gl.uniform1f(U('uMix1'),0.72);gl.uniform1f(U('uMix2'),0.5);gl.uniform1f(U('uSpeed'),0.2);});
+  /* 标题栏改用下方 headerFx() 的深色光轨，这里不再画 */
+  const hcv=null,hdr=null;
   if(!bg&&!hdr)return;
   let MX=innerWidth/2,MY=innerHeight/2,SX=MX,SY=MY,ht=0,hv=0;
   addEventListener('mousemove',e=>{MX=e.clientX;MY=e.clientY;ht=1;});
@@ -1495,6 +1768,96 @@ window.addEventListener('DOMContentLoaded',()=>{restoreSession();});
   if(R)R.innerHTML=G({side:'R',sz:126,x:58,bottom:70,N:20,dur:20,op:.82},S1)+
     G({side:'R',sz:84,x:122,bottom:96,N:14,dur:14,rev:1,arms:4,op:.78},S2)+
     G({side:'R',sz:84,x:34,bottom:32,N:14,dur:14,rev:1,arms:4,op:.78},S2);
+})();
+</script>
+<script>
+/* ===== 标题栏光轨：深色底 + WebGL 曲线光轨扫掠（移植自访客登记系统 fx.js）
+   一次 drawArrays 画完，CPU 每帧只更新 uTime；0.6x 分辨率 + 30fps 上限；
+   切到后台停渲染；WebGL 不可用或用户开了「减少动态效果」时静默退化成纯色底。 ===== */
+(function(){
+  const mount=document.querySelector('header.top');
+  if(!mount)return;
+  const N=800, cv=document.createElement('canvas');
+  cv.className='fx-hd'; cv.setAttribute('aria-hidden','true');
+  mount.insertBefore(cv,mount.firstChild);
+  let gl=null;
+  try{gl=cv.getContext('webgl',{alpha:false,antialias:false,premultipliedAlpha:false})
+        ||cv.getContext('experimental-webgl');}catch(e){}
+  if(!gl)return;
+  const VS=['precision highp float;',
+    'attribute float aIdx,aT,aSide;',
+    'uniform float uTime,uCount;',
+    'varying float vT,vSeed,vSide,vFade;',
+    'float hash(float n){return fract(sin(n)*43758.5453);}',
+    'void main(){',
+    '  vT=aT; vSeed=aIdx/uCount; vSide=aSide;',
+    '  float h=hash(aIdx);',
+    '  float lane=(hash(aIdx+3.0)*2.0-1.0)*1.06;',
+    '  float bow=lane*(1.0-abs(lane))*1.35;',
+    '  float sp=0.55+h*1.35;',
+    '  float ph=fract(uTime*0.16*sp+hash(aIdx+17.0));',
+    '  float x0=-1.35+ph*2.9;',
+    '  float len=0.22+0.85*hash(aIdx+23.0);',
+    '  float x1=x0+len;',
+    '  float y0=lane*0.92+sin(x0*1.7+uTime*0.35)*0.10*bow;',
+    '  float y1=lane*0.92+sin(x1*1.7+uTime*0.35)*0.10*bow;',
+    '  vec2 q0=vec2(x0,y0), q1=vec2(x1,y1);',
+    '  vec2 df=q1-q0; vec2 tg=df/max(length(df),1e-5);',
+    '  vec2 pe=vec2(-tg.y,tg.x);',
+    '  float w=0.0026+0.0048*h;',
+    '  gl_Position=vec4(mix(q0,q1,aT)+pe*aSide*w, 0.0, 1.0);',
+    '  vFade=smoothstep(1.55,0.30,abs(x0));',
+    '}'].join('\n');
+  const FS=['precision mediump float;',
+    'varying float vT,vSeed,vSide,vFade;',
+    'void main(){',
+    '  float edge=pow(1.0-abs(vSide),0.7);',
+    '  float a=edge*vFade*(0.06+0.94*vT)*0.38;',
+    '  vec3 cool=mix(vec3(0.16,0.45,0.95),vec3(0.35,0.85,0.98),fract(vSeed*3.7));',
+    '  vec3 warm=mix(vec3(1.00,0.72,0.32),vec3(1.00,0.90,0.70),fract(vSeed*5.1));',
+    '  vec3 c=mix(cool,warm,step(0.86,fract(vSeed*7.3)));',
+    '  gl_FragColor=vec4(c,a);',
+    '}'].join('\n');
+  function sh(t,src){const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)){console.warn(gl.getShaderInfoLog(o));return null;}return o;}
+  const vs=sh(gl.VERTEX_SHADER,VS), fs=sh(gl.FRAGMENT_SHADER,FS);
+  if(!vs||!fs)return;
+  const pr=gl.createProgram();gl.attachShader(pr,vs);gl.attachShader(pr,fs);gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){console.warn(gl.getProgramInfoLog(pr));return;}
+  gl.useProgram(pr);
+  const data=new Float32Array(N*18), q=[[0,-1],[0,1],[1,-1],[1,-1],[0,1],[1,1]];
+  let k=0;for(let i=0;i<N;i++)for(let j=0;j<6;j++){data[k++]=i;data[k++]=q[j][0];data[k++]=q[j][1];}
+  gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);
+  ['aIdx','aT','aSide'].forEach((nm,n)=>{const loc=gl.getAttribLocation(pr,nm);
+    gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,1,gl.FLOAT,false,12,n*4);});
+  const uTime=gl.getUniformLocation(pr,'uTime');
+  gl.uniform1f(gl.getUniformLocation(pr,'uCount'),N);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);   /* 深底用加色混合，光叠加才亮 */
+  function size(){
+    const d=Math.min(window.devicePixelRatio||1,1.6)*0.6;
+    cv.width=Math.max(1,Math.round(mount.clientWidth*d));
+    cv.height=Math.max(1,Math.round(mount.clientHeight*d));
+    gl.viewport(0,0,cv.width,cv.height);
+  }
+  size();
+  let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(size,200);});
+  function draw(t){gl.clearColor(0.106,0.102,0.239,1);gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform1f(uTime,t);gl.drawArrays(gl.TRIANGLES,0,N*6);}
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){draw(0);return;}
+  let last=0,hid=false;const t0=performance.now();
+  document.addEventListener('visibilitychange',()=>{hid=document.hidden;});
+  (function loop(now){requestAnimationFrame(loop);
+    if(hid||now-last<33)return;last=now;draw((now-t0)/1000);})(performance.now());
+})();
+</script>
+<script>
+/* 标题栏高度写进 --hdrH，供冻结区定位（标题栏字号/内边距改了也能自适应） */
+(function(){
+  const h=document.querySelector('header.top');if(!h)return;
+  const set=()=>document.documentElement.style.setProperty('--hdrH',h.offsetHeight+'px');
+  set();addEventListener('resize',set);
+  if(window.ResizeObserver)new ResizeObserver(set).observe(h);
 })();
 </script>
 </body>
