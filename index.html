@@ -374,6 +374,9 @@ function saveSession(){if(!_sessionReady)return;clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{try{idbSet(SKEY,sessionSnapshot()).catch(()=>{});}catch(e){}},250);}
 window.clearSession=()=>{
   if(!confirm('确定清空已上传的全部数据吗？\n\n清空后本页会刷新成空白状态，需要重新上传表格。'))return;
+  /* 关掉回写闸：location.reload() 会触发 beforeunload，
+     若不关会把内存里的 store 原样写回 IndexedDB，导致"清空了又回来" */
+  _sessionReady=false;clearTimeout(_saveTimer);
   idbDel(SKEY).catch(()=>{}).then(()=>location.reload());};
 function renderRestoreBar(ts){
   const el=document.getElementById('restoreBar');if(!el)return;
